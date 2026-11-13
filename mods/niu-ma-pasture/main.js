@@ -19,8 +19,10 @@
 // failure, its exit code staying up until you click it or run another command. A command
 // running over 2 s gets a dark bubble with the command, project and elapsed time. Running
 // state comes from the core's foreground process; the command, times and exit codes from
-// shell/niu-ma.zsh, which labels the terminal (see that file). Night falls after 19:00.
-// Props: { demo: true } draws made-up agents and terminals in every state (for screenshots).
+// shell/niu-ma.zsh, which labels the terminal (see that file). The sky follows the clock
+// (evening 17–19, night 19–6) or is pinned by clicking the sun or moon; the app theme is separate.
+// Props: { demo: true } draws made-up agents and terminals in every state (for screenshots);
+// { sky: "day" | "evening" | "night" } pins the sky over the click choice.
 // Art: sprites/ (tools/sprites.py). Scenery is drawn natively with gradients and paths.
 import { View, div, image, PathBuilder, Background } from "gpui-kit";
 import { agents, terminals, spaces, panes, run, hc, settings, props } from "herdr";
@@ -71,7 +73,11 @@ function rand(seed) {
   return () => ((x = Math.imul(x ^ (x >>> 15), 2246822507) ^ Math.imul(x ^ (x >>> 13), 3266489909)) >>> 0) / 4294967296;
 }
 const byAddress = (address) => agents().find((a) => a.address === address) ?? { address };
-const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 19; };
+// The sky, separate from the app's theme: "auto" follows the clock (evening 17–19, night
+// 19–6), or it's pinned to day, evening or night. Clicking the sun or moon cycles it.
+const SKY_MODES = ["auto", "day", "evening", "night"];
+const SKY_NAMES = { auto: "Auto (follows the clock)", day: "Day", evening: "Evening", night: "Night" };
+const clockPhase = () => { const h = new Date().getHours(); return h < 6 || h >= 19 ? "night" : h >= 17 ? "evening" : "day"; };
 const statusOf = (a) => (STATUS[a.status] ? a.status : "idle");
 const breedOf = (address) => BREEDS[hash(address) % BREEDS.length];
 // Each animal's own size within its breed, 0.92 to 1.08.
@@ -251,9 +257,10 @@ export default class Pasture extends View {
     this.hoverObj = null;
     // Elapsed times tick and flashes end: redraw once a second only while one is showing.
     cx.timer.every(1000, (cx) => { if (this.ticking) cx.notify(); });
-    this.night = isNight();
+    this.skyMode = SKY_MODES.includes(localStorage.getItem("sky")) ? localStorage.getItem("sky") : "auto";
+    this.clock = clockPhase();
     cx.timer.every(60000, (cx) => {
-      if (isNight() !== this.night) { this.night = !this.night; cx.notify(); }
+      if (clockPhase() !== this.clock) { this.clock = clockPhase(); cx.notify(); }
     });
     // Working agents' screens change: their sub-agents come and go, a queued message
     // becomes the question. Others have none running.
@@ -371,6 +378,10 @@ export default class Pasture extends View {
       ...objs.map((o) => ({ y: o.y, el: () => this.object(o, g) }))].sort((a, b) => a.y - b.y);
     const hovered = placed.find((p) => p.a.address === this.hovered);
 
+    const pinned = SKY_MODES.includes(props()?.sky) ? props().sky : this.skyMode;
+    const phase = pinned === "auto" ? this.clock : pinned;
+    this.night = phase === "night";
+    this.evening = phase === "evening";
     return div().id("pasture").size_full().relative().overflow_hidden().bg(this.night ? "#0d1633" : "#9ad6ff")
       .on_size_change((size, cx) => { this.size = size; cx.notify(); })
       .children([
@@ -381,6 +392,7 @@ export default class Pasture extends View {
         ...placed.map((p) => this.tag(p, g, helpers[p.a.address] ?? 0)),
         ...objs.flatMap((o) => this.objTip(o, g)),
         ...(this.night ? [div().absolute().left(0).top(0).w(g.W).h(g.H).bg("#0a123014")] : []),
+        ...(this.evening ? [div().absolute().left(0).top(g.yH - g.H * 0.2).w(g.W).h(g.H * 0.82).bg("#ff8a3d14")] : []),
         this.counts(list, g),
         ...(list.length ? [] : [this.empty(g)]),
         ...(hovered ? [this.bubble(hovered, g)] : []),
@@ -445,7 +457,9 @@ export default class Pasture extends View {
   sky(g) {
     const { W, H, yH, k } = g;
     const els = [this.path([[0, 0], [W, 0], [W, yH + 4], [0, yH + 4]],
-      this.night ? this.grad("#0b1230", "#2c3f74") : this.grad("#6ec3ff", "#dff4ff"))];
+      this.night ? this.grad("#0b1230", "#2c3f74") : this.evening ? this.grad("#5566ad", "#ffc183") : this.grad("#6ec3ff", "#dff4ff"))];
+    // The sun or moon, in a box you can click to change the sky.
+    const body = [];
     if (this.night) {
       const r = rand(7);
       for (let i = 0; i < 26; i++) {
@@ -453,20 +467,32 @@ export default class Pasture extends View {
         els.push(div().absolute().left(x).top(y).w(s).h(s).bg("#fff8dc")
           .loop("opacity", { from: 0.2 + r() * 0.3, to: 1, period: 1500 + r() * 3000 }));
       }
-      els.push(div().absolute().left(W * 0.74 - 22 * k).top(H * 0.1 - 6 * k).size(44 * k).rounded_full().bg("#fff6c81a")
+      body.push(div().absolute().left(8 * k).top(8 * k).size(44 * k).rounded_full().bg("#fff6c81a")
         .loop("opacity", { from: 0.5, to: 1, period: 4000 }));
-      els.push(div().absolute().left(W * 0.74 - 11 * k).top(H * 0.1 + 5 * k).size(22 * k).rounded_full().bg("#f6f0d0")
+      body.push(div().absolute().left(19 * k).top(19 * k).size(22 * k).rounded_full().bg("#f6f0d0")
         .child(div().absolute().left(9 * k).top(-3 * k).size(20 * k).rounded_full().bg("#1a2650")));
     } else {
-      els.push(div().absolute().left(W * 0.74 - 30 * k).top(H * 0.1 - 14 * k).size(60 * k).rounded_full().bg("#fff3b040")
+      const eve = this.evening;
+      body.push(div().absolute().left(0).top(0).size(60 * k).rounded_full().bg(eve ? "#ff8a3d55" : "#fff3b040")
         .loop("width", { from: 52 * k, to: 62 * k, period: 3600 }).loop("height", { from: 52 * k, to: 62 * k, period: 3600 }));
-      els.push(div().absolute().left(W * 0.74 - 15 * k).top(H * 0.1 + 1 * k).size(30 * k).rounded_full().bg("#ffe680")
-        .border_2().border_color("#fff6b8"));
+      body.push(div().absolute().left(15 * k).top(15 * k).size(30 * k).rounded_full().bg(eve ? "#ffa64d" : "#ffe680")
+        .border_2().border_color(eve ? "#ffd29a" : "#fff6b8"));
     }
+    const next = SKY_MODES[(SKY_MODES.indexOf(this.skyMode) + 1) % SKY_MODES.length];
+    const sunY = this.evening ? yH - H * 0.33 - 30 * k : H * 0.1 - 14 * k;
+    els.push(div().id("sky-body").absolute().left(W * 0.74 - 30 * k).top(sunY).size(60 * k).cursor_pointer()
+      .tooltip(`Sky: ${SKY_NAMES[this.skyMode]} · click for ${SKY_NAMES[next]}`)
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+      .on_click((_e, cx) => {
+        this.skyMode = next;
+        localStorage.setItem("sky", next);
+        cx.notify();
+      })
+      .children(body));
     CLOUDS.forEach((c, i) => {
       const s = c.s * 2 * k;
       const w = c.w * s, h = c.h * s;
-      els.push(div().id(`cloud-${i}`).absolute().top(H * c.y).w(w).h(h).opacity(this.night ? 0.35 : 0.95)
+      els.push(div().id(`cloud-${i}`).absolute().top(H * c.y).w(w).h(h).opacity(this.night ? 0.35 : this.evening ? 0.85 : 0.95)
         .loop("left", { from: c.from * W - w / 2, to: c.to * W - w / 2, period: c.period, easing: "linear" })
         .children([
           image(`${DIR}/${c.img}a.svg`).absolute().left(0).top(0).w(w).h(h)

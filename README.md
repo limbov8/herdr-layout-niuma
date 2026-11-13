@@ -42,6 +42,8 @@ See [RECIPE.md](RECIPE.md) for everything it shows and does, and how it's built.
 - It runs `hc` locally: `hc read` on agents' screens (questions and Claude Code
   sub-agents), `hc run` / `hc send` for the bottom shell, and `hc label` from the optional
   zsh hook. No network access, no files outside Herdr's folder.
+- Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
+  evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals
-  in every state (that's how `preview.png` was taken).
+  in every state (that's how `preview.png` was taken); `"sky": "evening"` pins the sky.
 - The sprites are generated: `python3 mods/niu-ma-pasture/tools/sprites.py`.
