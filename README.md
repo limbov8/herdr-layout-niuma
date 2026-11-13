@@ -3,8 +3,8 @@
 Your coding agents graze in a pixel-art pasture: horses and cows of sixteen breeds that
 graze, drink, wait with a red `!` or lie down when they're done; sub-agents are rabbits,
 squirrels and hedgehogs; plain terminals are campfires, cooking pots and magic crystals
-that burn while a command runs. Spaces and agents on the left, side-by-side panels in the
-centre, a shell along the bottom.
+that burn while a command runs. Your spaces are pills in the bar under the pasture, panels
+sit side by side across the full width (no sidebar), and a shell runs along the bottom.
 
 ![NiuMa](preview.png)
 
@@ -36,7 +36,7 @@ know), and it may ask before adding the optional zsh hook.
 
 2. Merge `keys.json`'s `layout:niu-ma` section into your `~/.config/herdr-app/keys.json`
    (`⌘T` adds a side-by-side panel, `⌘⇧T` one with your first installed agent, `⌘W`
-   closes just the focused panel; only in this layout).
+   closes just the focused panel, `⌘N` makes a new space; only in this layout).
 
 3. Optional, for exit codes on terminal objects (zsh): add to `~/.zshrc`
 
@@ -53,9 +53,14 @@ know), and it may ask before adding the optional zsh hook.
 
 ## Good to know
 
+- There's no sidebar: switch spaces with the bar's pills; rename, reorder and worktrees are
+  in the command palette (`⌘⇧P`). Herdr's `⌘B` (toggle sidebar) does nothing useful here.
 - It runs `hc` locally: `hc read` on agents' screens (questions and Claude Code
   sub-agents), `hc run` / `hc send` for the bottom shell, and `hc label` from the optional
   zsh hook. No network access, no files outside Herdr's folder.
+- The ⚙ in the bar sets the command that starts Claude Code and Codex (e.g.
+  `declawd --yolo`), shown next to Herdr's default. It's saved as their `run` in
+  `~/.config/herdr-app/programs.json`, so Herdr's own menus use it too.
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals

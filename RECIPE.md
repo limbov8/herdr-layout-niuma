@@ -4,8 +4,9 @@ A pasture across the top of the window where every coding agent is a pixel-art h
 cow, grazing, waiting or lying down depending on its status. Sub-agents are rabbits,
 squirrels and hedgehogs at their parent's feet, and every plain terminal (a dev server, a
 test run, a REPL) is a cooking pot, fire pit or magic crystal that burns while a command
-runs. Below the pasture: your spaces and agents on the left, the active tab's panels side
-by side in the centre, and a long-lived shell along the bottom. Dark (`moss`) theme.
+runs. Below the pasture: a bar with your spaces as pills, the active tab's panels side by
+side across the whole width, and a long-lived shell along the bottom. No sidebar. Dark
+(`moss`) theme.
 
 ![NiuMa](preview.png)
 
@@ -103,22 +104,36 @@ scale (27–54px), scattered like the animals:
 - **Cooking pot**: an iron pot of water hanging from a wooden tripod over two logs.
 - **Magic crystal**: three crystal shards in a grass tuft; dim purple when idle.
 
-**Below the pasture**, a row:
+**Below the pasture**, the full width (no sidebar), a column:
 
-- **Sidebar**, 250px (44–480), `chrome` background: Herdr's `spaces` list over Herdr's
-  `agents` list, half each (at least 90px each).
-- **Centre column**:
-  - **Bar**, 36px, `chrome`: 🐄 (🐎 when split), the space's name (12.5px semibold),
-    its git branch (11px `dim` with a branch icon), `N panels`, the space's tabs as small
-    pills (`Tab 1 ×2`) when there's more than one; on the right a `+ Split` button and one
-    button per installed agent (up to three, the first filled with `accent`), 24px high,
-    12px text, 6px radius.
-  - **Panels**, `canvas` background with 6px padding: the active tab's panes as cards,
-    6px apart, 8px radius, `background` fill, 1px `border` (1px `accent` when focused), a
-    28px Herdr `pane` header on top of each; a single pane is framed too.
-  - **Shell**, 210px (80–700): a 30px bar (terminal icon in `accent`, `Shell`, its
-    folder in `dim`, and on the right `cd <focused panel's folder>`, `Clear`, `Restart`)
-    over a live terminal.
+- **Bar**, 36px, `chrome`, left to right:
+  - 🐄 (🐎 when the tab is split);
+  - **space pills**, one per space: 24px high, 7px radius, at most 190px, a 7px dot in
+    the space's status colour (`blocked`, `done`, `working` from the theme; `dim` at half
+    opacity when idle), its name (12px, cut short with `…`), and `@<machine>` (10px
+    `dim`) for a space on another machine. The current space is `selected` with a 1px
+    `input` border and a semibold name. They shrink and clip when there are many.
+    Tooltip: `<name> · <branch> · on <machine>`;
+  - a 24px **+** (`plus` icon, `muted`), tooltip `New space (⌘N)`;
+  - a 1×18px divider in `border`;
+  - the current space's git branch (11px `dim`, branch icon), `N panels`, and the
+    space's tabs as small pills (`Tab 1 ×2`) when there's more than one;
+  - on the right: a 24px **⚙** (`settings` icon), tooltip `Agent start commands`; a
+    `+ Split` button; one button per installed agent (up to three, the first filled with
+    `accent`), 24px high, 12px text, 6px radius.
+- **Panels**, `canvas` background with 6px padding: the active tab's panes as cards, 6px
+  apart, 8px radius, `background` fill, 1px `border` (1px `accent` when focused), a 28px
+  Herdr `pane` header on top of each; a single pane is framed too.
+- **Shell**, 210px (80–700): a 30px bar (terminal icon in `accent`, `Shell`, its folder in
+  `dim`, and on the right `cd <focused panel's folder>`, `Clear`, `Restart`) over a live
+  terminal.
+- **Agent start commands** (the ⚙ dialog, 600 × 400, `popover` background): the title
+  (15px semibold), `What the agent buttons, ⌘⇧T and Herdr's menus run to start each
+  agent. Saved as its run in programs.json.` (11.5px `muted`), then a card each for
+  **Claude Code** and **Codex** (`surface`, 1px `border`, 8px radius): the name (13px
+  semibold), `not installed` when it isn't, `Reset to default` (11px `accent`) on the
+  right, `Default: <command>` (11px `muted`), and a 32px text field in JetBrains Mono
+  12.5px with the current command. At the bottom: a status line, `Close` and `Save`.
 - Terminals have 10 × 6px padding and full opacity.
 
 ## How it behaves
@@ -184,6 +199,18 @@ scale (27–54px), scattered like the animals:
   pins it instead.
 - **Clicks.** An animal or its tag: focus its pane (`pane.focus`, or `terminal.peek` for
   one without a pane). Pressing on any of them doesn't drag the window.
+- **Spaces.** Clicking a space pill selects it (`space.select`). **+** and `⌘N` make a
+  new space (`space.new`, named after its folder).
+- **Agent start commands.** ⚙ opens the dialog. It reads `programs.json` and
+  `knownAgents()`: an agent's default is Herdr's own command (what `knownAgents()` reports
+  while `programs.json` doesn't override it, remembered in `localStorage` `defaults`), the
+  field shows the current command. Commands are split like a shell line (`"…"`, `'…'`,
+  `\ `) and shown quoted where needed. `Reset to default` puts the default back in the
+  field. `Save` re-reads the file, sets each agent's `programs.<key>.run` (or removes it
+  when it equals the default, keeping the file's other entries), writes it atomically
+  only if it hasn't changed since, shows `Saved. New agents start with these commands.`
+  and bumps shared `niu-ma.agents` so the bar reloads its agent buttons. Running agents
+  are unaffected.
 - **Bar.** `+ Split` and `⌘T` add a panel to the current tab instead of a new tab: they
   split the widest panel (by its terminal's columns) to the right, so panels stay side by
   side across the centre. The agent buttons and `⌘⇧T` (the first installed agent) do the
@@ -203,9 +230,6 @@ root (column, theme moss, titlebar none, traffic_lights [14,14], terminal_paddin
       terminal_opacity 1, divider 1 border, preview layouts/niu-ma.svg)
 ├─ pasture   block 340px (180–600), window_drag   mod niu-ma-pasture
 └─ body      row, divider 1 border
-   ├─ sidebar  column 250px (44–480), background chrome, divider 1 border
-   │  ├─ spaces  block weight 1, min 90   mod spaces   (Herdr's)
-   │  └─ agents  block weight 1, min 90   mod agents   (Herdr's)
    └─ work     column, divider 1 border
       ├─ bar     block 36px                mod niu-ma-bar
       ├─ main    block, background canvas, padding 6
@@ -220,7 +244,8 @@ root (column, theme moss, titlebar none, traffic_lights [14,14], terminal_paddin
 `keys.json`, merged into the person's:
 
 ```json
-{ "layout:niu-ma": { "cmd-t": "niu-ma-bar.split", "cmd-shift-t": "niu-ma-bar.split-agent", "cmd-w": "pane.close" } }
+{ "layout:niu-ma": { "cmd-t": "niu-ma-bar.split", "cmd-shift-t": "niu-ma-bar.split-agent",
+                     "cmd-w": "pane.close", "cmd-n": "space.new" } }
 ```
 
 **`mods/niu-ma-pasture/`** (`mod.json`: `{ "place": "none" }`; props: none, or
@@ -252,16 +277,25 @@ and/or `{ sky: "day" | "evening" | "night" }` to pin the sky):
   (the clicked sky mode).
 
 **`mods/niu-ma-bar/`** (`mod.json`: `{ "place": "none" }`; props `{}` for the bar over the
-panels, `{ role: "shell" }` for the shell's bar):
+panels, `{ role: "shell" }` for the shell's bar, `{ role: "agents" }` for the ⚙ dialog,
+which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agents" }, kind:
+"dialog", width: 600, height: 400 })`):
 
 - `herdr` functions: `spaces`, `panes`, `focused`, `terminals`, `run`, `theme`, `props`,
-  `layout`, `knownAgents`, `nextCommand`, `hc`, `home`.
-- Commands: `pane.split` (right, with `argv` for an agent), `tab.select`, `tab.new` (an
-  empty tab), `pane.focus`, `terminal.kill`, `layout.set` (to put the shell block back).
+  `layout`, `knownAgents`, `nextCommand`, `hc`, `home`, `appHome`, `openOverlay`,
+  `closeOverlay`, `readTextFile`, `writeTextFile`, `shared`, `setShared`. `InputState` and
+  `Input` from `gpui-base` for the command fields.
+- Commands: `space.select`, `space.new`, `pane.split` (right, with `argv` for an agent),
+  `tab.select`, `tab.new` (an empty tab), `pane.focus`, `terminal.kill`, `layout.set` (to
+  put the shell block back).
 - Key commands (`nextCommand`): `split`, `split-agent`.
-- Icons from Herdr's `workspace-chrome`: `git-branch.svg`, `plus.svg`, `terminal.svg`.
+- Shared/stored: shared `niu-ma.agents` (bumped on Save), `localStorage` `defaults`
+  (each agent's default command).
+- Icons from Herdr's `workspace-chrome`: `git-branch.svg`, `plus.svg`, `settings.svg`,
+  `terminal.svg`.
 
-**Herdr's mods it uses**: `spaces`, `agents`, `pane`.
+**Herdr's mods it uses**: `pane` (the panel headers). There's no sidebar, so Herdr's
+`spaces` and `agents` lists aren't used; the bar's pills and the pasture replace them.
 
 ## Watch out
 
@@ -271,6 +305,13 @@ panels, `{ role: "shell" }` for the shell's bar):
   niu-ma.role=shell --cwd ~` to start the shell, and `hc send --force <shell> …` for
   `cd` and `Clear`. The zsh hook runs `hc label` around every command. Nothing calls
   `fetch` or reaches the network, and no files outside Herdr's folder are read or written.
+- **The ⚙ dialog writes `~/.config/herdr-app/programs.json`** (Herdr's own program
+  table), changing what Herdr's menus run too, not only this layout's buttons. It writes
+  only `programs.claude.run` and `programs.codex.run`, and only if the file hasn't changed
+  since it was read.
+- **No sidebar.** Herdr's default `⌘B` toggles a `sidebar` node, which this layout
+  doesn't have, so it shows an error there. Renaming, reordering and worktree actions for
+  spaces are in the command palette (`⌘⇧P`).
 - **The zsh hook needs one line in `~/.zshrc`:**
   `[[ -n $HC_TERMINAL_ID ]] && source ~/.config/herdr-app/mods/niu-ma-pasture/shell/niu-ma.zsh`.
   Without it, objects still show running (from the core's foreground process: its pid
@@ -292,15 +333,19 @@ panels, `{ role: "shell" }` for the shell's bar):
   depend on its height: test at 180px and 600px. Very wide windows spread animals thin.
 - **Glyphs.** Some symbols (e.g. `⌨`) aren't in the UI font and draw as boxes; `▶ ▷ ✓ ✗ ✦
   ! ◐◓◑◒ 🐇` are fine.
-- **Assumes** Herdr's `spaces`, `agents` and `pane` mods and `workspace-chrome` icons
+- **Assumes** Herdr's `pane` mod and `workspace-chrome` icons
   (a default install), `hc` on the shell's PATH, macOS key names (`cmd-…`) in `keys.json`.
 
 ## Done when
 
 - `herdr-app check` passes for `mods/niu-ma-pasture` and `mods/niu-ma-bar`.
-- `herdr-app do layout.switch '{"name":"niu-ma"}'` shows the pasture on top, spaces and
-  agents on the left, the bar, framed panels with headers, and within a few seconds a
-  live shell at the bottom.
+- `herdr-app do layout.switch '{"name":"niu-ma"}'` shows the pasture on top, the bar with
+  a pill per space, framed panels with headers across the full width, and within a few
+  seconds a live shell at the bottom. There's no sidebar.
+- Clicking a space pill switches to it; **+** and `⌘N` make a new space.
+- ⚙ shows Claude Code's and Codex's default commands; saving `declawd --yolo` for Claude
+  Code puts `"claude": { "run": ["declawd", "--yolo"] }` in `programs.json`, and the bar's
+  Claude Code button then starts `declawd --yolo`.
 - Every agent is a horse or cow with a name tag (question summary, `space · tab`) and a
   status badge under its feet; the bottom-centre pills count them.
 - A working agent grazes (or drinks at the creek), a blocked one gets the red `!` sign,

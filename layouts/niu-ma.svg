@@ -17,15 +17,17 @@
   <rect x="230" y="38" width="10" height="6" fill="#d4782f"/><rect x="233" y="30" width="8" height="8" rx="2" fill="#e5484d"/>
   <rect x="292" y="4" width="24" height="6" rx="3" fill="#0f1c22"/>
   <rect y="62" width="320" height="1" fill="#2e3b33"/>
-  <rect y="63" width="70" height="137" fill="#172019"/>
-  <rect x="8" y="72" width="54" height="7" rx="2" fill="#2c3a31"/><rect x="8" y="84" width="54" height="7" rx="2" fill="#24302a"/>
-  <rect x="8" y="96" width="54" height="7" rx="2" fill="#24302a"/>
-  <rect x="8" y="134" width="54" height="6" rx="2" fill="#24302a"/><rect x="8" y="145" width="54" height="6" rx="2" fill="#24302a"/>
-  <rect x="71" y="63" width="249" height="10" fill="#1f2a24"/><rect x="290" y="65" width="26" height="6" rx="2" fill="#6fbf73"/>
-  <rect x="76" y="77" width="117" height="78" rx="4" fill="#111814" stroke="#6fbf73"/>
-  <rect x="197" y="77" width="119" height="37" rx="4" fill="#111814" stroke="#2e3b33"/>
-  <rect x="197" y="118" width="119" height="37" rx="4" fill="#111814" stroke="#2e3b33"/>
-  <rect x="71" y="160" width="249" height="8" fill="#1f2a24"/>
-  <rect x="71" y="168" width="249" height="32" fill="#0d130f"/>
-  <rect x="78" y="174" width="60" height="3" fill="#6fbf73"/><rect x="78" y="181" width="90" height="3" fill="#4b5a50"/>
+  <rect y="63" width="320" height="11" fill="#1f2a24"/>
+  <rect x="16" y="65.5" width="34" height="6" rx="2" fill="#2f4a3a" stroke="#6fbf73" stroke-width="0.6"/>
+  <rect x="53" y="65.5" width="28" height="6" rx="2" fill="#26332c"/>
+  <rect x="84" y="65.5" width="6" height="6" rx="1.5" fill="#26332c"/>
+  <circle cx="19.5" cy="68.5" r="1.2" fill="#3d8be0"/><circle cx="56.5" cy="68.5" r="1.2" fill="#3fb26b"/>
+  <rect x="262" y="65.5" width="20" height="6" rx="2" fill="#26332c"/><rect x="285" y="65.5" width="30" height="6" rx="2" fill="#6fbf73"/>
+  <rect x="5" y="78" width="152" height="80" rx="4" fill="#111814" stroke="#6fbf73"/>
+  <rect x="163" y="78" width="152" height="80" rx="4" fill="#111814" stroke="#2e3b33"/>
+  <rect x="11" y="85" width="70" height="3" fill="#4b5a50"/><rect x="11" y="92" width="110" height="3" fill="#3a463e"/>
+  <rect x="169" y="85" width="60" height="3" fill="#4b5a50"/><rect x="169" y="92" width="96" height="3" fill="#3a463e"/>
+  <rect y="162" width="320" height="8" fill="#1f2a24"/>
+  <rect y="170" width="320" height="30" fill="#0d130f"/>
+  <rect x="8" y="176" width="60" height="3" fill="#6fbf73"/><rect x="8" y="183" width="90" height="3" fill="#4b5a50"/>
 </svg>
