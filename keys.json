@@ -1,0 +1,7 @@
+{
+  "layout:niu-ma": {
+    "cmd-t": "niu-ma-bar.split",
+    "cmd-shift-t": "niu-ma-bar.split-agent",
+    "cmd-w": "pane.close"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "id": "root",
+  "type": "column",
+  "children": [
+    {
+      "id": "pasture",
+      "type": "block",
+      "content": {
+        "mod": "niu-ma-pasture"
+      },
+      "size": {
+        "px": 340
+      },
+      "min": 180,
+      "max": 600,
+      "window_drag": true
+    },
+    {
+      "id": "body",
+      "type": "row",
+      "children": [
+        {
+          "id": "sidebar",
+          "type": "column",
+          "children": [
+            {
+              "id": "spaces",
+              "type": "block",
+              "content": {
+                "mod": "spaces"
+              },
+              "size": {
+                "weight": 1
+              },
+              "min": 90
+            },
+            {
+              "id": "agents",
+              "type": "block",
+              "content": {
+                "mod": "agents"
+              },
+              "size": {
+                "weight": 1
+              },
+              "min": 90
+            }
+          ],
+          "size": {
+            "px": 250
+          },
+          "min": 44,
+          "max": 480,
+          "background": "chrome",
+          "divider": {
+            "width": 1,
+            "color": "border"
+          }
+        },
+        {
+          "id": "work",
+          "type": "column",
+          "children": [
+            {
+              "id": "bar",
+              "type": "block",
+              "content": {
+                "mod": "niu-ma-bar"
+              },
+              "size": {
+                "px": 36
+              }
+            },
+            {
+              "id": "main",
+              "type": "block",
+              "content": {
+                "tab": "active",
+                "pane": {
+                  "header": {
+                    "content": {
+                      "mod": "pane"
+                    },
+                    "reveal": "always",
+                    "height": 28,
+                    "position": "top"
+                  },
+                  "background": "background",
+                  "border": {
+                    "width": 1,
+                    "color": "border"
+                  },
+                  "focus": {
+                    "width": 1,
+                    "color": "accent"
+                  },
+                  "radius": 8,
+                  "gap": 6,
+                  "lone": true
+                }
+              },
+              "background": "canvas",
+              "padding": 6
+            },
+            {
+              "id": "shell",
+              "type": "column",
+              "children": [
+                {
+                  "id": "shell-bar",
+                  "type": "block",
+                  "content": {
+                    "mod": "niu-ma-bar",
+                    "props": {
+                      "role": "shell"
+                    }
+                  },
+                  "size": {
+                    "px": 30
+                  }
+                }
+              ],
+              "size": {
+                "px": 210
+              },
+              "min": 80,
+              "max": 700
+            }
+          ],
+          "divider": {
+            "width": 1,
+            "color": "border"
+          }
+        }
+      ],
+      "divider": {
+        "width": 1,
+        "color": "border"
+      }
+    }
+  ],
+  "theme": "moss",
+  "terminal_padding": [
+    10,
+    6
+  ],
+  "terminal_opacity": 1,
+  "divider": {
+    "width": 1,
+    "color": "border"
+  },
+  "titlebar": "none",
+  "traffic_lights": [
+    14,
+    14
+  ],
+  "preview": "layouts/niu-ma.svg"
+}
