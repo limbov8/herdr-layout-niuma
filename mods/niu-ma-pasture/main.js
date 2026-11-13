@@ -179,18 +179,31 @@ const subAgents = (text) => {
   const found = prompts(lines);
   const start = found.length ? found[found.length - 1].i : 0;
   const out = [];
-  const seen = new Map();
+  // Each name's runs in order: a name seen again after it finished is a new run.
+  const runs = new Map();
   const add = (name, done) => {
     const key = name.slice(0, 80);
-    if (seen.has(key)) { if (done) seen.get(key).done = true; return; }
+    const list = runs.get(key) ?? [];
+    const last = list[list.length - 1];
+    if (last && !(last.done && !done)) { if (done) last.done = true; return; }
     const sub = { name: key, done };
-    seen.set(key, sub); out.push(sub);
+    list.push(sub); runs.set(key, list); out.push(sub);
   };
+  let footer = false;
   for (let i = start; i < lines.length; i++) {
     const l = lines[i];
-    // `⏺ Agent "…" finished · 4s` (completed, failed, stopped)
-    const e = l.match(/^\s*[⏺●]\s+(?:Agent|Task)\s+"(.+?)"\s+(?:finished|completed|failed|stopped|was stopped|killed)/u);
-    if (e) { add(e[1].trim(), true); continue; }
+    // The task list under the prompt: `• main`, then `○ general-purpose  what it does  5s · ↓ 46.7k tokens`
+    if (/^\s*[•●◉⏺]\s+main\s*$/u.test(l)) { footer = true; continue; }
+    if (footer) {
+      const f = l.match(/^\s*([○◯◌●◉•✓✔✗✻])\s+[\w-]+\s{2,}(.+?)(?:\s{2,}\S.*)?$/u);
+      if (f) { add(f[2].trim(), /[✓✔✗]/u.test(f[1])); continue; }
+      if (l.trim()) footer = false;
+    }
+    // `⏺ Agent "…" finished · 4s` (completed, failed, stopped) ends one; any other
+    // `⏺ Agent "…" …` line (e.g. "is waiting on its own background work") means it's out.
+    // A fan-out's launch list names only the first few, so these find the rest.
+    const e = l.match(/^\s*[⏺●]\s+(?:Agent|Task)\s+"(.+?)"\s+(.*)$/u);
+    if (e) { add(e[1].trim(), /^(?:finished|completed|failed|stopped|was stopped|killed)\b/u.test(e[2])); continue; }
     // `⏺ 2 background agents launched` then `├ name` / `└ name`
     if (/^\s*[⏺●]\s+\d+\s+(?:background\s+)?agents?\s+launched/u.test(l)) {
       for (let j = i + 1; j < lines.length && /^\s*[├└│]/u.test(lines[j]); j++) {

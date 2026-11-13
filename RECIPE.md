@@ -143,9 +143,13 @@ scale (27–54px), scattered like the animals:
     live and not done. Clicking one peeks at it.
   - Claude Code's Task/Agent calls, read off the parent's screen in the current turn:
     `⏺ Agent(<what>) <model>` (or `Task(…)`, or any tool call whose output counts tool
-    uses), and `⏺ N background agents launched` followed by `├ <what>` / `└ <what>`
-    lines. Finished when `Done (` shows under the call, or `⏺ Agent "<what>" finished`
-    (completed, failed, stopped) appears. Clicking one goes to the parent.
+    uses), `⏺ N background agents launched` followed by `├ <what>` / `└ <what>` lines,
+    and any later `⏺ Agent "<what>" …` status line (a fan-out's launch list names only
+    the first two; e.g. `… is waiting on its own background work` names the rest).
+    Finished when `Done (` shows under the call, or `⏺ Agent "<what>" finished`
+    (completed, failed, stopped) appears. A name that shows up again after it finished is
+    a new sub-agent (the same task fanned out twice in one turn). Clicking one goes to the
+    parent.
   - Busy critters sit and nibble (bobbing 0.5 art px), one in three hops back and forth;
     one that needs input wears a small `!`. Each stays at least 6 s, so a quick one is
     still seen. Finished (or when the parent stops working), it hops off the nearer edge
@@ -260,8 +264,9 @@ panels, `{ role: "shell" }` for the shell's bar):
   shows `✓ finished` with no exit code and failures look like successes. Other shells
   (bash, fish) have no hook yet.
 - **Sub-agents and questions come from screen text**, so they follow Claude Code's
-  output format (`⏺ Agent(…)`, `background agents launched`, `Agent "…" finished`,
-  `Done (`). Another agent's sub-agents only show if they're Herdr terminals.
+  output format (`⏺ Agent(…)`, `background agents launched`, `Agent "…" <status>`,
+  `Done (`). Don't trust the launch list alone: with four or more it names only the
+  first two. Another agent's sub-agents only show if they're Herdr terminals.
 - **Zoom.** `on_size_change` reports zoomed pixels while the mod's own pixels are zoomed
   too: divide the size by `settings().zoom`, or the scene overflows at any zoom but 1.
 - **Herdr removes a terminal block when its terminal ends**, so the shell bar has to add
@@ -286,8 +291,9 @@ panels, `{ role: "shell" }` for the shell's bar):
   status badge under its feet; the bottom-centre pills count them.
 - A working agent grazes (or drinks at the creek), a blocked one gets the red `!` sign,
   a done one lies down, an idle one stands swishing its tail.
-- Asking a Claude Code agent to "make 2 subagents that each run for 10 seconds" puts two
-  critters beside it (`🐇 2` on its tag); they hop away after they finish.
+- Asking a Claude Code agent to "fan out 4 subagents that each run for 20 seconds" puts
+  four critters beside it (`🐇 4` on its tag); they hop away after they finish. Asking
+  again in the same turn shows four again.
 - In the bottom shell with the hook loaded, `sleep 6` shows a running bubble after 2 s
   with a ticking time; `ls /nonexistent` leaves a red `✗ exit 1` until clicked; `true`
   flashes green `✓ exit 0`; `python3` shows a steady blue flame.
