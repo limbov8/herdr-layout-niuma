@@ -12,6 +12,20 @@ See [RECIPE.md](RECIPE.md) for everything it shows and does, and how it's built.
 
 ## Install
 
+### Recommended: tell your agent
+
+In a Herdr terminal, ask your coding agent (Claude Code, Codex, …):
+
+```
+Read ~/.config/herdr-app/AGENTS.md, then add this layout: https://github.com/limbov8/herdr-layout-niuma/tree/main
+```
+
+It copies the layout and mods without overwriting yours, merges the keys, checks the mods
+and switches to the layout. It should tell you first that the mods run `hc` (see Good to
+know), and it may ask before adding the optional zsh hook.
+
+### Manually
+
 1. Copy into your Herdr home (don't overwrite anything of yours; rename if a name is taken):
 
    | From this repo | To |
