@@ -127,7 +127,7 @@ scale (27–54px), scattered like the animals:
 
 | Status | The animal | Tag |
 |---|---|---|
-| working | head down grazing, the head bobbing 1 art px every 0.65–0.95 s; tail swishing (two tail positions cross-fading every 1.3–1.9 s). A working animal whose spot is beside the creek (and with nobody else drinking there) steps to the bank and drinks with its nose at the water instead, a ripple ring growing at its muzzle | blue spinner badge |
+| working | head down grazing, the head bobbing 1 art px every 0.65–0.95 s; tail swishing (two tail positions cross-fading every 1.3–1.9 s). About half of working animals (picked by address) drink instead when their spot is within about one body length of the creek and nobody else drinks on that bank at that depth: they step to the bank and drink with the nose at the water, a ripple ring growing at the muzzle | blue spinner badge |
 | blocked (needs you) | standing, tail swishing; a bouncing 18–30px red `!` sign over its tag | red-bordered tag, `!` badge |
 | done | lying down, legs folded, eyes closed in a happy arc, blushing | `✓` badge |
 | idle | standing, tail swishing | `z` badge |
@@ -172,8 +172,10 @@ scale (27–54px), scattered like the animals:
   `<project>` is the terminal's space name (`Shell · <folder>` for the bottom shell).
   Interactive means the foreground program is one of vim, nvim, vi, nano, emacs, less,
   more, man, top, htop, btop, ssh, mosh, psql, mysql, sqlite3, redis-cli, mongosh,
-  lazygit, tig, tmux, fzf, k9s, bash, zsh, fish, sh, or an interpreter (python, node,
-  ipython, irb, ghci, lua, R, deno, bun, julia) started with no script. Clicking an object
+  lazygit, tig, tmux, fzf, k9s, bash, zsh, fish, sh, claude, codex (an agent that hasn't
+  reported a status yet), or an interpreter (python, node, ipython, irb, ghci, lua, R,
+  deno, bun, julia) started with no script. Names are compared lowercased, so macOS's
+  `Python` counts. Clicking an object
   focuses its terminal (and dismisses a failure).
 - **Sky.** Clicking the sun or moon cycles `Auto` → `Day` → `Evening` → `Night` →
   `Auto`; its tooltip reads `Sky: <mode> · click for <next>`. Auto follows the clock
@@ -234,7 +236,9 @@ and/or `{ sky: "day" | "evening" | "night" }` to pin the sky):
   `<breed>-stand|graze-body|graze-head|sit-<r|l>`, `<breed>-tail-<a|b>-<r|l>` (16 breeds),
   `critter-<rabbit|bunny|squirrel|hedgehog>-<sit|hop>-<r|l>`, `obj-firepit-base`,
   `obj-firepit-flame-<a|b|blue>`, `obj-pot-base`, `obj-pot-fire-<a|b|blue>`,
-  `obj-crystal-<dim|lit|blue|green|red>`, clouds, tufts, flowers, a tree, a barn.
+  `obj-crystal-<dim|lit|blue|green|red>`, two-shape clouds (`cloud<1–4><a|b>`), tufts,
+  flowers, a tree, a barn, and `fence.svg` (left from an earlier version; the front fence
+  is drawn natively).
   `tools/hd.py` draws animals from ellipses, polygons and tapering strokes rasterised at
   3 px per art unit, then shades and outlines them; `critters.py` and `objects.py` use the
   same shapes.
