@@ -1,4 +1,4 @@
-// The 牛马 layout's two bars.
+// The NiuMa layout's two bars.
 //   props {}                  over the panes: the space, its tabs, and buttons that split the
 //                             tab (a new panel, not a new tab). `niu-ma-bar.split` and
 //                             `niu-ma-bar.split-agent` (keys.json) do the same.

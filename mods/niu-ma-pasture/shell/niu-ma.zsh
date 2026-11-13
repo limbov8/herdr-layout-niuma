@@ -1,4 +1,4 @@
-# 牛马 pasture shell integration. Records each command on this Herdr terminal as labels,
+# NiuMa pasture shell integration. Records each command on this Herdr terminal as labels,
 # so the pasture's pot / fire pit / crystal can show it:
 #   niu-ma.state  running | done
 #   niu-ma.cmd    the command line (first 300 characters)

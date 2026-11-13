@@ -1,4 +1,4 @@
-# Niuma (牛马)
+# NiuMa
 
 A pasture across the top of the window where every coding agent is a pixel-art horse or
 cow, grazing, waiting or lying down depending on its status. Sub-agents are rabbits,
@@ -7,7 +7,7 @@ test run, a REPL) is a cooking pot, fire pit or magic crystal that burns while a
 runs. Below the pasture: your spaces and agents on the left, the active tab's panels side
 by side in the centre, and a long-lived shell along the bottom. Dark (`moss`) theme.
 
-![Niuma](preview.png)
+![NiuMa](preview.png)
 
 ## What you see
 

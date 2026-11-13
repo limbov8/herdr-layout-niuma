@@ -1,4 +1,4 @@
-# Niuma (牛马) — a Herdr layout
+# NiuMa — a Herdr layout
 
 Your coding agents graze in a pixel-art pasture: horses and cows of sixteen breeds that
 graze, drink, wait with a red `!` or lie down when they're done; sub-agents are rabbits,
@@ -6,7 +6,7 @@ squirrels and hedgehogs; plain terminals are campfires, cooking pots and magic c
 that burn while a command runs. Spaces and agents on the left, side-by-side panels in the
 centre, a shell along the bottom.
 
-![Niuma](preview.png)
+![NiuMa](preview.png)
 
 See [RECIPE.md](RECIPE.md) for everything it shows and does, and how it's built.
 

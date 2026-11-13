@@ -1,4 +1,4 @@
-// 牛马 pasture: a meadow under far mountains, a creek and drifting clouds. Every agent is a
+// NiuMa pasture: a meadow under far mountains, a creek and drifting clouds. Every agent is a
 // pixel horse or cow (sixteen breeds and sizes, picked by its address), scattered over the
 // meadow and never on the water; nearer ones are larger.
 //   working  grazing, or drinking at the creek (head bobbing, tail swishing)
