@@ -172,6 +172,7 @@ export default class Bar extends View {
     this.rows = AGENT_KEYS.map((a) => ({ ...a, input: InputState.new({ placeholder: a.key }), def: null, installed: null }));
     this.status = "Loading…";
     this.inShell = shared("niu-ma.agent-shell") !== false;
+    this.showShell = !!findNode(layout(), "shell") && !findNode(layout(), "shell").hidden;
     cx.spawn(async (cx) => {
       try {
         this.original = await readTextFile(this.path);
@@ -214,6 +215,8 @@ export default class Bar extends View {
       if (!Object.keys(file.programs).length) delete file.programs;
       await writeTextFile(this.path, `${JSON.stringify(file, null, 2)}\n`, current);
       setShared("niu-ma.agent-shell", this.inShell);
+      // The bottom shell: hidden, not removed, so it keeps running and comes back as it was.
+      if (findNode(layout(), "shell")) run(this.showShell ? "layout.show" : "layout.hide", { id: "shell" });
       setShared("niu-ma.agents", Date.now());
       this.status = "Saved. New agents start with these commands.";
     } catch (e) {
@@ -241,7 +244,10 @@ export default class Bar extends View {
       .child(div().text_size(11.5).text_color(t.muted)
         .child("What the agent buttons, ⌘⇧T and Herdr's menus run to start each agent. Saved as its run in programs.json."))
       .children(this.rows.map(row))
-      .child(this.shellSwitch(t))
+      .child(this.toggle(t, "agent-shell", "Start agents in a shell", this.inShell, (v) => { this.inShell = v; },
+        "The agent buttons and ⌘⇧T open a shell panel and type the command, so it gets your ~/.zshrc (env for Vertex, Bedrock, proxies). Off: Herdr starts it directly, without ~/.zshrc."))
+      .child(this.toggle(t, "show-shell", "Show the shell at the bottom", this.showShell, (v) => { this.showShell = v; },
+        "Off hides the bottom shell and its bar; the shell keeps running and comes back when you turn this on."))
       .child(div().flex_1())
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
@@ -249,21 +255,20 @@ export default class Bar extends View {
         .child(this.btn("agents-save", "Save", (_e, cx) => cx.spawn(async (cx) => this.saveAgents(cx)), { primary: true })));
   }
 
-  // Whether the bar starts agents typed into a shell panel (your ~/.zshrc and its env) or
-  // directly as a program (Herdr's way, which skips ~/.zshrc). Only the bar's buttons and
-  // ⌘⇧T: Herdr's own menus always start them directly.
-  shellSwitch(t) {
-    const on = this.inShell;
+  // A switch card in the ⚙ dialog. "Start agents in a shell": whether the bar starts
+  // agents typed into a shell panel (your ~/.zshrc and its env) or directly as a program
+  // (Herdr's way, which skips ~/.zshrc); only the bar's buttons and ⌘⇧T, Herdr's own menus
+  // always start them directly. "Show the shell": the layout's bottom `shell` column.
+  toggle(t, id, title, on, set, text) {
     const knob = div().absolute().top(2).left(on ? 16 : 2).size(14).rounded_full().bg("#ffffff")
       .transition("left", { duration: 150, easing: "ease-out" });
-    return div().id("agent-shell").flex().flex_row().items_center().gap(10).p(12).rounded(8).bg(t.surface)
+    return div().id(id).flex().flex_row().items_center().gap(10).px(12).py(10).rounded(8).bg(t.surface)
       .border_1().border_color(t.border).cursor_pointer()
-      .on_click((_e, cx) => { this.inShell = !this.inShell; cx.notify(); })
+      .on_click((_e, cx) => { set(!on); cx.notify(); })
       .child(div().relative().w(32).h(18).flex_shrink_0().rounded_full().bg(on ? t.accent : t.input).child(knob))
       .child(div().flex().flex_col().gap(2).flex_1().min_w_0()
-        .child(div().text_size(13).font_semibold().text_color(t.foreground).child("Start agents in a shell"))
-        .child(div().text_size(11).text_color(t.muted)
-          .child("The agent buttons and ⌘⇧T open a shell panel and type the command, so it gets your ~/.zshrc (env for Vertex, Bedrock, proxies). Off: Herdr starts it directly, without ~/.zshrc.")));
+        .child(div().text_size(13).font_semibold().text_color(t.foreground).child(title))
+        .child(div().text_size(11).text_color(t.muted).child(text)));
   }
 
   renderMain() {
@@ -308,7 +313,7 @@ export default class Bar extends View {
       .child(div().flex_1())
       .child(div().id("agent-settings").flex_none().size(24).rounded(6).flex().items_center().justify_center()
         .hover((s) => s.bg(t.hover)).cursor_pointer().tooltip("Agent start commands")
-        .on_click(() => openOverlay({ mod: "niu-ma-bar", props: { role: "agents" }, kind: "dialog", width: 600, height: 480 }))
+        .on_click(() => openOverlay({ mod: "niu-ma-bar", props: { role: "agents" }, kind: "dialog", width: 600, height: 560 }))
         .child(svg("mods/workspace-chrome/settings.svg").size(14).text_color(t.muted)))
       .child(this.btn("split", "Split", () => this.split(), { icon: "mods/workspace-chrome/plus.svg", tint: true, tip: "New panel in this tab (⌘T)" }))
       .children(this.agents.map((a, i) => this.btn(`agent-${a.key}`, a.name, () => this.split(a.run),

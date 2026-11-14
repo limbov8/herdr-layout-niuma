@@ -126,7 +126,7 @@ scale (27–54px), scattered like the animals:
 - **Shell**, 210px (80–700): a 30px bar (terminal icon in `accent`, `Shell`, its folder in
   `dim`, and on the right `cd <focused panel's folder>`, `Clear`, `Restart`) over a live
   terminal.
-- **Agent start commands** (the ⚙ dialog, 600 × 480, `popover` background): the title
+- **Agent start commands** (the ⚙ dialog, 600 × 560, `popover` background): the title
   (15px semibold), `What the agent buttons, ⌘⇧T and Herdr's menus run to start each
   agent. Saved as its run in programs.json.` (11.5px `muted`), then a card each for
   **Claude Code** and **Codex** (`surface`, 1px `border`, 8px radius): the name (13px
@@ -136,7 +136,9 @@ scale (27–54px), scattered like the animals:
   `input` off, a white knob sliding 150 ms), **Start agents in a shell** and, wrapping,
   `The agent buttons and ⌘⇧T open a shell panel and type the command, so it gets your
   ~/.zshrc (env for Vertex, Bedrock, proxies). Off: Herdr starts it directly, without
-  ~/.zshrc.` At the bottom: a status line, `Close` and `Save`.
+  ~/.zshrc.` Then a second switch card, **Show the shell at the bottom**: `Off hides the
+  bottom shell and its bar; the shell keeps running and comes back when you turn this
+  on.` At the bottom: a status line, `Close` and `Save`.
 - Terminals have 10 × 6px padding and full opacity.
 
 ## How it behaves
@@ -229,7 +231,9 @@ scale (27–54px), scattered like the animals:
   field. `Save` re-reads the file, sets each agent's `programs.<key>.run` (or removes it
   when it equals the default, keeping the file's other entries), writes it atomically
   only if it hasn't changed since, shows `Saved. New agents start with these commands.`
-  and bumps shared `niu-ma.agents` so the bar reloads its agent buttons. Running agents
+  and bumps shared `niu-ma.agents` so the bar reloads its agent buttons. Save also runs
+  `layout.hide` or `layout.show` on the `shell` column per the second switch (Herdr keeps
+  that across restarts; the switch reads it back from `layout()`'s `hidden`). Running agents
   are unaffected.
 - **Bar.** `+ Split` and `⌘T` add a panel to the current tab instead of a new tab: they
   split the widest panel (by its terminal's columns) to the right, so panels stay side by
@@ -316,6 +320,7 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
   `closeOverlay`, `readTextFile`, `writeTextFile`, `shared`, `setShared`. `InputState` and
   `Input` from `gpui-base` for the command fields.
 - Commands: `space.select`, `space.new`, `pane.split` (right, with `argv` for an agent),
+  `layout.hide` / `layout.show` (`shell`),
   `tab.select`, `tab.new` (an empty tab), `pane.focus`, `terminal.kill`, `layout.set` (to
   put the shell block back).
 - Key commands (`nextCommand`): `split`, `split-agent`.
@@ -390,6 +395,9 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
   Claude Code button then starts `declawd --yolo`. It opens a shell panel and types the
   command, and a variable set only in `~/.zshrc` is set for the agent; with **Start
   agents in a shell** off and saved, it isn't.
+- Turning **Show the shell at the bottom** off and saving hides the shell and its bar and
+  the panels take the full height; turning it on brings back the same shell, still
+  running.
 - Every agent is a horse or cow with a name tag (question summary, `space · tab`) and a
   status badge under its feet; the bottom-centre pills count them. Hovering one shows no
   second card.

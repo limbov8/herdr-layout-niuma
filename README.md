@@ -63,7 +63,8 @@ know), and it may ask before adding the optional zsh hook.
   `~/.config/herdr-app/programs.json`, so Herdr's own menus use it too. Its **Start agents
   in a shell** switch (on by default) makes the bar's agent buttons and `⌘⇧T` type the
   command into a shell panel, so the agent gets your `~/.zshrc` (e.g. env for Claude on
-  Vertex or Bedrock); Herdr's own menus start agents without it.
+  Vertex or Bedrock); Herdr's own menus start agents without it. **Show the shell at the
+  bottom** hides or shows the bottom shell (it keeps running while hidden).
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals
