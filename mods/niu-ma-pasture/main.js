@@ -366,22 +366,71 @@ export default class Pasture extends View {
 
   // A new animal's spot: of a few dozen tries away from the water, the one farthest from
   // everyone already there.
-  pick(address, g, taken, s = sizeOf(address)) {
-    const r = rand(hash(`spot${address}`));
-    let best = null, bestScore = -1;
-    for (let i = 0; i < 48; i++) {
-      const xf = 0.03 + r() * 0.94, t = r();
-      const p = g.scale(t) * s, w = AW * p, y = g.feet(t), x = xf * g.W - w / 2;
-      if (x < 4 || x + w > g.W - 4 || this.wet(g, x, y, p).hit) continue;
-      let score = 10;
-      for (const o of taken) {
-        const ow = AW * g.scale(o.t);
-        const d = Math.hypot((xf - o.xf) * g.W / ((w + ow) / 2), (y - g.feet(o.t)) / (AH * p * 0.55));
-        score = Math.min(score, d);
-      }
-      if (score > bestScore) { bestScore = score; best = { xf, t }; }
+  // What a spot covers: the body, and for an animal its name tag over the head.
+  boxes(key, spot, g) {
+    const y = g.feet(spot.t);
+    if (key.startsWith("obj:")) {
+      const p = g.scale(spot.t) * OBJ_SIZE, w = OW * p, x = spot.xf * g.W - w / 2;
+      return { body: [x, y - OFEET * p, w, OFEET * p], tag: null };
+    }
+    const p = g.scale(spot.t) * sizeOf(key), w = AW * p, x = spot.xf * g.W - w / 2;
+    const fs = Math.min(13, Math.max(10.5, 2.1 * p + 1)), tagH = fs * 2 + 10;
+    const tw = Math.max(150, Math.min(260, w + 70));
+    return { body: [x + 3 * p, y - 26 * p, 30 * p, 26 * p],
+      tag: [x + w / 2 - tw / 2, y - FEET * p + HEAD_TOP.stand * p - tagH - 4, tw, tagH] };
+  }
+
+  // How much a spot overlaps the others, as a share of its body: bodies count fully, a tag
+  // over a body half, two tags a little.
+  crowding(key, spot, g, others) {
+    const area = (a, b) => (a && b ? Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]))
+      * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1])) : 0);
+    const me = this.boxes(key, spot, g);
+    let sum = 0;
+    for (const [k, o] of others) {
+      if (k === key) continue;
+      const it = this.boxes(k, o, g);
+      sum += area(me.body, it.body) + 0.5 * (area(me.tag, it.body) + area(me.body, it.tag)) + 0.25 * area(me.tag, it.tag);
+    }
+    return sum / (me.body[2] * me.body[3]);
+  }
+
+  // The least crowded of 120 dry spots, then the one farthest from everyone.
+  pick(key, g, others) {
+    const r = rand(hash(`spot${key}`));
+    let best = null, bestCost = Infinity, bestFar = -1;
+    for (let i = 0; i < 120; i++) {
+      const spot = { xf: 0.03 + r() * 0.94, t: r() };
+      const { body } = this.boxes(key, spot, g);
+      const p = g.scale(spot.t) * (key.startsWith("obj:") ? OBJ_SIZE : sizeOf(key));
+      const x = spot.xf * g.W - (key.startsWith("obj:") ? OW : AW) * p / 2, y = g.feet(spot.t);
+      if (body[0] < 4 || body[0] + body[2] > g.W - 4 || this.wet(g, x, y, p).hit) continue;
+      const cost = Math.round(this.crowding(key, spot, g, others) * 50) / 50;
+      let far = 10;
+      for (const [k, o] of others) if (k !== key) far = Math.min(far, Math.hypot((spot.xf - o.xf) * 4, spot.t - o.t));
+      if (cost < bestCost || (cost === bestCost && far > bestFar)) { best = spot; bestCost = cost; bestFar = far; }
     }
     return best ?? { xf: 0.03 + r() * 0.94, t: r() };
+  }
+
+  // Remembered spots picked at another size can end up crowded: move those (later
+  // addresses first) once at start and whenever the meadow's size changes a lot.
+  spread(g, live) {
+    const sizeKey = `${Math.round(g.W / 80)}x${Math.round(g.H / 40)}`;
+    if (this.spreadAt === sizeKey || this.demo) return false;
+    this.spreadAt = sizeKey;
+    const keys = Object.keys(this.spots).filter((k) => k.startsWith("obj:") || live.has(k))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const kept = [];
+    let moved = false;
+    for (const k of keys) {
+      if (kept.length && this.crowding(k, this.spots[k], g, kept) > 0.15) {
+        const spot = this.pick(k, g, kept);
+        if (this.crowding(k, spot, g, kept) < this.crowding(k, this.spots[k], g, kept)) { this.spots[k] = spot; moved = true; }
+      }
+      kept.push([k, this.spots[k]]);
+    }
+    return moved;
   }
 
   render(cx) {
@@ -399,13 +448,14 @@ export default class Pasture extends View {
     for (const addr of Object.keys(this.spots)) if (!addr.startsWith("obj:") && !live.has(addr)) { delete this.spots[addr]; dirty = true; }
     for (const a of list) {
       if (parentOf[a.address] || this.spots[a.address]) continue;
-      this.spots[a.address] = this.pick(a.address, g, Object.values(this.spots));
+      this.spots[a.address] = this.pick(a.address, g, Object.entries(this.spots));
       dirty = true;
       if (this.known) {
         this.entering[a.address] = true;
         cx.timer.after(80, (cx) => { delete this.entering[a.address]; cx.notify(); });
       }
     }
+    if (this.spread(g, live)) dirty = true;
     if (dirty) localStorage.setItem("spots", JSON.stringify(this.spots));
     this.known = live;
     // A new turn means a new question: read it from the screen.
@@ -681,14 +731,17 @@ export default class Pasture extends View {
     badge = info.glyph ? badge.child(info.glyph) : badge.frames(["◐", "◓", "◑", "◒"], 260);
 
     // Animals stay on their own spot (no sliding about); a new one fades in.
-    return div().id(`ani-${a.address}`).absolute().left(x).top(y - FEET * p).w(w).h(h)
-      .opacity(entering ? 0 : 1).transition("opacity", { duration: 900, easing: "ease-out" })
+    // Clicks only on the body, not the picture's empty corners, so the animal behind
+    // stays clickable where it shows.
+    const hit = div().id(`ani-${a.address}`).absolute().left(3 * p).top(2 * p).w(30 * p).h(25 * p)
       .cursor_pointer()
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .on_click((_e, cx) => { this.perform(a, breed, cx); this.go(a); })
       // Its name tag already says what a hover card would: hovering just rereads the question.
-      .on_hover((on, cx) => { if (on) this.ask(a.address, cx, 20000); })
-      .children([body, badge]);
+      .on_hover((on, cx) => { if (on) this.ask(a.address, cx, 20000); });
+    return div().absolute().left(x).top(y - FEET * p).w(w).h(h)
+      .opacity(entering ? 0 : 1).transition("opacity", { duration: 900, easing: "ease-out" })
+      .children([body, badge, hit]);
   }
 
   // Plays its next action: each step a redraw, so a few over a second or two.
@@ -872,7 +925,7 @@ export default class Pasture extends View {
       const key = `obj:${t.address}`;
       keep.add(key);
       if (!this.spots[key]) {
-        this.spots[key] = this.pick(key, g, Object.values(this.spots), OBJ_SIZE);
+        this.spots[key] = this.pick(key, g, Object.entries(this.spots));
         dirty = true;
       }
       const fg = t.foreground;

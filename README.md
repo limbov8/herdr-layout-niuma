@@ -56,11 +56,14 @@ know), and it may ask before adding the optional zsh hook.
 - There's no sidebar: switch spaces with the bar's pills; rename, reorder and worktrees are
   in the command palette (`⌘⇧P`). Herdr's `⌘B` (toggle sidebar) does nothing useful here.
 - It runs `hc` locally: `hc read` on agents' screens (questions and Claude Code
-  sub-agents), `hc run` / `hc send` for the bottom shell, and `hc label` from the optional
-  zsh hook. No network access, no files outside Herdr's folder.
+  sub-agents), `hc run` / `hc send` for the bottom shell and for typing agent commands into
+  a new panel (with `herdr-app do pane.split`), and `hc label` from the optional zsh hook. No network access, no files outside Herdr's folder.
 - The ⚙ in the bar sets the command that starts Claude Code and Codex (e.g.
   `declawd --yolo`), shown next to Herdr's default. It's saved as their `run` in
-  `~/.config/herdr-app/programs.json`, so Herdr's own menus use it too.
+  `~/.config/herdr-app/programs.json`, so Herdr's own menus use it too. Its **Start agents
+  in a shell** switch (on by default) makes the bar's agent buttons and `⌘⇧T` type the
+  command into a shell panel, so the agent gets your `~/.zshrc` (e.g. env for Claude on
+  Vertex or Bedrock); Herdr's own menus start agents without it.
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals

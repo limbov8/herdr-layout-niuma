@@ -10,7 +10,7 @@
 //                             the layout's `shell-term` block at it.
 import { View, div, image, svg } from "gpui-kit";
 import { InputState, Input } from "gpui-base";
-import { spaces, panes, focused, terminals, run, theme, props, layout, knownAgents, nextCommand, hc, home, appHome,
+import { spaces, panes, focused, terminals, run, exec, theme, props, layout, knownAgents, nextCommand, hc, home, appHome,
   openOverlay, closeOverlay, readTextFile, writeTextFile, shared, setShared } from "herdr";
 
 const SHELL_NAME = "niu-ma-shell";
@@ -87,15 +87,28 @@ export default class Bar extends View {
 
   // A new panel in the shown tab, always side by side: it splits the widest panel (by its
   // terminal's columns) to the right, so the columns stay about even across the centre.
+  // An agent starts inside a plain shell panel, typed in like you would: so it gets the
+  // shell's own environment (~/.zshrc: cloud credentials, PATH, env for a Vertex or Bedrock
+  // Claude), which Herdr's direct start of an argv skips, and the shell stays when it exits.
+  // The ⚙ dialog's "Start agents in a shell" (shared "niu-ma.agent-shell") turns it off.
   split(argv) {
     const f = focused();
     if (!f) return;
     const here = panes().filter((p) => p.tab === f.tab);
-    if (!here.length) return run("tab.new", argv ? { argv } : {});
     const sizes = Object.fromEntries(terminals().map((t) => [t.address, { cols: t.cols ?? 0, rows: t.rows ?? 0 }]));
     const cols = (p) => sizes[p.terminal]?.cols ?? 0;
     const target = [...here].sort((a, b) => cols(b) - cols(a) || (b.focused ? 1 : 0) - (a.focused ? 1 : 0))[0];
-    run("pane.split", { pane: target.pane, direction: "right", ...(argv ? { argv } : {}) });
+    const [name, args] = target ? ["pane.split", { pane: target.pane, direction: "right" }] : ["tab.new", {}];
+    if (!argv?.length) return run(name, args);
+    if (shared("niu-ma.agent-shell") === false) return run(name, { ...args, argv });
+    const flags = Object.entries(args).flatMap(([k, v]) => [`--${k}`, v]);
+    exec("herdr-app", ["do", name, ...flags])
+      .then((r) => { try { return r.code === 0 ? JSON.parse(r.stdout) : null; } catch { return null; } }, () => null)
+      .then((made) => {
+        // No herdr-app on PATH: Herdr starts it directly, without the shell's setup.
+        if (!made?.terminal) return run(name, { ...args, argv });
+        return hc(["send", made.terminal, joinArgs(argv)]).catch(() => null);
+      });
   }
 
   shellAddress() {
@@ -158,6 +171,7 @@ export default class Bar extends View {
     this.path = `${appHome()}/programs.json`;
     this.rows = AGENT_KEYS.map((a) => ({ ...a, input: InputState.new({ placeholder: a.key }), def: null, installed: null }));
     this.status = "Loading…";
+    this.inShell = shared("niu-ma.agent-shell") !== false;
     cx.spawn(async (cx) => {
       try {
         this.original = await readTextFile(this.path);
@@ -199,6 +213,7 @@ export default class Bar extends View {
       }
       if (!Object.keys(file.programs).length) delete file.programs;
       await writeTextFile(this.path, `${JSON.stringify(file, null, 2)}\n`, current);
+      setShared("niu-ma.agent-shell", this.inShell);
       setShared("niu-ma.agents", Date.now());
       this.status = "Saved. New agents start with these commands.";
     } catch (e) {
@@ -226,11 +241,29 @@ export default class Bar extends View {
       .child(div().text_size(11.5).text_color(t.muted)
         .child("What the agent buttons, ⌘⇧T and Herdr's menus run to start each agent. Saved as its run in programs.json."))
       .children(this.rows.map(row))
+      .child(this.shellSwitch(t))
       .child(div().flex_1())
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
         .child(this.btn("agents-cancel", "Close", () => overlay && closeOverlay(overlay)))
         .child(this.btn("agents-save", "Save", (_e, cx) => cx.spawn(async (cx) => this.saveAgents(cx)), { primary: true })));
+  }
+
+  // Whether the bar starts agents typed into a shell panel (your ~/.zshrc and its env) or
+  // directly as a program (Herdr's way, which skips ~/.zshrc). Only the bar's buttons and
+  // ⌘⇧T: Herdr's own menus always start them directly.
+  shellSwitch(t) {
+    const on = this.inShell;
+    const knob = div().absolute().top(2).left(on ? 16 : 2).size(14).rounded_full().bg("#ffffff")
+      .transition("left", { duration: 150, easing: "ease-out" });
+    return div().id("agent-shell").flex().flex_row().items_center().gap(10).p(12).rounded(8).bg(t.surface)
+      .border_1().border_color(t.border).cursor_pointer()
+      .on_click((_e, cx) => { this.inShell = !this.inShell; cx.notify(); })
+      .child(div().relative().w(32).h(18).flex_shrink_0().rounded_full().bg(on ? t.accent : t.input).child(knob))
+      .child(div().flex().flex_col().gap(2).flex_1().min_w_0()
+        .child(div().text_size(13).font_semibold().text_color(t.foreground).child("Start agents in a shell"))
+        .child(div().text_size(11).text_color(t.muted)
+          .child("The agent buttons and ⌘⇧T open a shell panel and type the command, so it gets your ~/.zshrc (env for Vertex, Bedrock, proxies). Off: Herdr starts it directly, without ~/.zshrc.")));
   }
 
   renderMain() {
@@ -275,7 +308,7 @@ export default class Bar extends View {
       .child(div().flex_1())
       .child(div().id("agent-settings").flex_none().size(24).rounded(6).flex().items_center().justify_center()
         .hover((s) => s.bg(t.hover)).cursor_pointer().tooltip("Agent start commands")
-        .on_click(() => openOverlay({ mod: "niu-ma-bar", props: { role: "agents" }, kind: "dialog", width: 600, height: 400 }))
+        .on_click(() => openOverlay({ mod: "niu-ma-bar", props: { role: "agents" }, kind: "dialog", width: 600, height: 480 }))
         .child(svg("mods/workspace-chrome/settings.svg").size(14).text_color(t.muted)))
       .child(this.btn("split", "Split", () => this.split(), { icon: "mods/workspace-chrome/plus.svg", tint: true, tip: "New panel in this tab (⌘T)" }))
       .children(this.agents.map((a, i) => this.btn(`agent-${a.key}`, a.name, () => this.split(a.run),

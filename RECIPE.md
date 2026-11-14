@@ -126,13 +126,17 @@ scale (27–54px), scattered like the animals:
 - **Shell**, 210px (80–700): a 30px bar (terminal icon in `accent`, `Shell`, its folder in
   `dim`, and on the right `cd <focused panel's folder>`, `Clear`, `Restart`) over a live
   terminal.
-- **Agent start commands** (the ⚙ dialog, 600 × 400, `popover` background): the title
+- **Agent start commands** (the ⚙ dialog, 600 × 480, `popover` background): the title
   (15px semibold), `What the agent buttons, ⌘⇧T and Herdr's menus run to start each
   agent. Saved as its run in programs.json.` (11.5px `muted`), then a card each for
   **Claude Code** and **Codex** (`surface`, 1px `border`, 8px radius): the name (13px
   semibold), `not installed` when it isn't, `Reset to default` (11px `accent`) on the
   right, `Default: <command>` (11px `muted`), and a 32px text field in JetBrains Mono
-  12.5px with the current command. At the bottom: a status line, `Close` and `Save`.
+  12.5px with the current command. Under them a card with a 32 × 18 switch (`accent` on,
+  `input` off, a white knob sliding 150 ms), **Start agents in a shell** and, wrapping,
+  `The agent buttons and ⌘⇧T open a shell panel and type the command, so it gets your
+  ~/.zshrc (env for Vertex, Bedrock, proxies). Off: Herdr starts it directly, without
+  ~/.zshrc.` At the bottom: a status line, `Close` and `Save`.
 - Terminals have 10 × 6px padding and full opacity.
 
 ## How it behaves
@@ -146,9 +150,13 @@ scale (27–54px), scattered like the animals:
 | done | lying down, legs folded, eyes closed in a happy arc, blushing | `✓` badge |
 | idle | standing, tail swishing | `z` badge |
 
-- **Spots.** A new animal fades in (0.9 s) at the open spot farthest from everyone, out of
-  48 tries that keep its whole body off the creek. It keeps that spot (remembered across
-  restarts); animals never slide around. They're drawn far to near.
+- **Spots.** A new animal fades in (0.9 s) at the least crowded of 120 spots that keep
+  its whole body off the creek, ties going to the one farthest from everyone. Crowding is
+  overlap with every other animal and terminal object, as a share of its body: bodies
+  fully, a name tag over a body half, two tags a quarter. It keeps that spot (remembered
+  across restarts); animals never slide around. Remembered spots more than 15% crowded
+  move once at start and when the meadow's size changes a lot (later addresses move
+  first). They're drawn far to near.
 - **Questions.** The tag's summary is the last prompt line on
   the agent's screen (`❯`, `›` or `>` followed by text), read with `hc read <t> --lines
   400`. The input box at the bottom (a prompt line right under a `────` rule) is skipped:
@@ -226,7 +234,10 @@ scale (27–54px), scattered like the animals:
 - **Bar.** `+ Split` and `⌘T` add a panel to the current tab instead of a new tab: they
   split the widest panel (by its terminal's columns) to the right, so panels stay side by
   side across the centre. The agent buttons and `⌘⇧T` (the first installed agent) do the
-  same with that agent running. Tab pills select their tab. `⌘W` closes only the focused
+  same with that agent: by default they split a plain shell panel (`herdr-app do
+  pane.split`, which prints its terminal) and type the command into it with `hc send`, so
+  the agent gets the shell's `~/.zshrc` and the shell stays when it exits. With the
+  switch off, or no `herdr-app` on `PATH`, they pass `argv` to `pane.split` instead. Tab pills select their tab. `⌘W` closes only the focused
   panel (Herdr closes the tab with its last panel, and asks before closing a space).
 - **Shell.** The bottom terminal is a kept core terminal named `niu-ma-shell` with no
   space labels (so it's in no space). `cd …` types `cd '<folder>'` into it and focuses it,
@@ -301,14 +312,16 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
 "dialog", width: 600, height: 400 })`):
 
 - `herdr` functions: `spaces`, `panes`, `focused`, `terminals`, `run`, `theme`, `props`,
-  `layout`, `knownAgents`, `nextCommand`, `hc`, `home`, `appHome`, `openOverlay`,
+  `layout`, `knownAgents`, `nextCommand`, `hc`, `exec`, `home`, `appHome`, `openOverlay`,
   `closeOverlay`, `readTextFile`, `writeTextFile`, `shared`, `setShared`. `InputState` and
   `Input` from `gpui-base` for the command fields.
 - Commands: `space.select`, `space.new`, `pane.split` (right, with `argv` for an agent),
   `tab.select`, `tab.new` (an empty tab), `pane.focus`, `terminal.kill`, `layout.set` (to
   put the shell block back).
 - Key commands (`nextCommand`): `split`, `split-agent`.
-- Shared/stored: shared `niu-ma.agents` (bumped on Save), `localStorage` `defaults`
+- Programs: `herdr-app do pane.split|tab.new` and `hc send <t> <command>` (agents in a shell).
+- Shared/stored: shared `niu-ma.agents` (bumped on Save), shared `niu-ma.agent-shell`
+  (`false` when the switch is off; absent means on), `localStorage` `defaults`
   (each agent's default command).
 - Icons from Herdr's `workspace-chrome`: `git-branch.svg`, `plus.svg`, `settings.svg`,
   `terminal.svg`.
@@ -328,6 +341,12 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
   table), changing what Herdr's menus run too, not only this layout's buttons. It writes
   only `programs.claude.run` and `programs.codex.run`, and only if the file hasn't changed
   since it was read.
+- **Herdr skips `~/.zshrc` for an `argv`.** `pane.split {argv}` runs the program from
+  Herdr's own environment: variables set in `~/.zshrc` (cloud credentials for a Vertex or
+  Bedrock Claude) are missing. A plain split runs your interactive shell, which reads it;
+  so type the command in. Herdr's own menus still start agents directly.
+- **Hit areas.** An animal's picture box has empty corners; put clicks on a body-sized
+  box (art 3–33 across, 2–27 down), or the one in front blocks the one behind.
 - **No sidebar.** Herdr's default `⌘B` toggles a `sidebar` node, which this layout
   doesn't have, so it shows an error there. Renaming, reordering and worktree actions for
   spaces are in the command palette (`⌘⇧P`).
@@ -368,7 +387,9 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
 - Clicking a space pill switches to it; **+** and `⌘N` make a new space.
 - ⚙ shows Claude Code's and Codex's default commands; saving `declawd --yolo` for Claude
   Code puts `"claude": { "run": ["declawd", "--yolo"] }` in `programs.json`, and the bar's
-  Claude Code button then starts `declawd --yolo`.
+  Claude Code button then starts `declawd --yolo`. It opens a shell panel and types the
+  command, and a variable set only in `~/.zshrc` is set for the agent; with **Start
+  agents in a shell** off and saved, it isn't.
 - Every agent is a horse or cow with a name tag (question summary, `space · tab`) and a
   status badge under its feet; the bottom-centre pills count them. Hovering one shows no
   second card.
