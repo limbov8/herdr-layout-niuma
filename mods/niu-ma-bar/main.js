@@ -11,7 +11,7 @@
 import { View, div, image, svg } from "gpui-kit";
 import { InputState, Input } from "gpui-base";
 import { spaces, panes, focused, terminals, run, exec, theme, props, layout, knownAgents, nextCommand, hc, home, appHome,
-  openOverlay, closeOverlay, readTextFile, writeTextFile, shared, setShared } from "herdr";
+  openOverlay, closeOverlay, readTextFile, writeTextFile, shared, setShared, notify } from "herdr";
 
 const SHELL_NAME = "niu-ma-shell";
 
@@ -218,9 +218,14 @@ export default class Bar extends View {
       // The bottom shell: hidden, not removed, so it keeps running and comes back as it was.
       if (findNode(layout(), "shell")) run(this.showShell ? "layout.show" : "layout.hide", { id: "shell" });
       setShared("niu-ma.agents", Date.now());
-      this.status = "Saved. New agents start with these commands.";
+      this.status = `Saved at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}. New agents start with these commands.`;
+      // Saving the same thing twice changes nothing on screen: say so out loud.
+      this.saved = true;
+      cx.timer.after(2000, (cx) => { this.saved = false; cx.notify(); });
+      notify({ title: "Agent settings saved", body: "New agents start with these commands.", level: "success", timeout: 3000 });
     } catch (e) {
       this.status = `Not saved: ${e}`;
+      notify({ title: "Agent settings not saved", body: String(e), level: "error" });
     }
     cx.notify();
   }
@@ -252,7 +257,11 @@ export default class Bar extends View {
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
         .child(this.btn("agents-cancel", "Close", () => overlay && closeOverlay(overlay)))
-        .child(this.btn("agents-save", "Save", (_e, cx) => cx.spawn(async (cx) => this.saveAgents(cx)), { primary: true })));
+        .child(this.btn("agents-save", this.saved ? "✓ Saved" : this.saving ? "Saving…" : "Save", (_e, cx) => {
+          if (this.saving) return;
+          this.saving = true; cx.notify();
+          cx.spawn(async (cx) => { await this.saveAgents(cx); this.saving = false; cx.notify(); });
+        }, { primary: true })));
   }
 
   // A switch card in the ⚙ dialog. "Start agents in a shell": whether the bar starts

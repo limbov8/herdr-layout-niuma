@@ -1,7 +1,8 @@
 # NiuMa — a Herdr layout
 
-Your coding agents graze in a pixel-art pasture: horses and cows of sixteen breeds that
-graze, drink, wait with a red `!` or lie down when they're done; sub-agents are rabbits,
+Your coding agents graze in a pixel-art pasture: horses, cows, a bull, an ox, a water
+buffalo and a bison (twenty breeds) that graze, drink, wait with a red `!` or lie down
+when they're done, cast shadows from the sun, and rear, buck, hop or moo when clicked; sub-agents are rabbits,
 squirrels and hedgehogs; plain terminals are campfires, cooking pots and magic crystals
 that burn while a command runs. Your spaces are pills in the bar under the pasture, panels
 sit side by side across the full width (no sidebar), and a shell runs along the bottom.

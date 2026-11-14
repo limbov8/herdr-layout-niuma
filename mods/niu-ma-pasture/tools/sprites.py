@@ -52,6 +52,15 @@ BREEDS = {
                      R="#24242a", U="#d88f9c", P="#f4f1ea", Q="#d8d4cc", spots=[(14.5, 15, 3.6, 9)]),
     "brownswiss": dict(kind="cow", B="#8e7c6c", S="#716256", M="#4e423a", H="#3a2a22", N="#2e2a28", K="#121010",
                      R="#efe6cc", U="#e8a0a8", face="#7a6a5c"),
+    # other cattle
+    "bull":     dict(kind="cow", crest=True, ring=True, horns="short", B="#4a2c20", S="#36201a", M="#24150f", H="#2a201a",
+                     N="#6a4a42", K="#1a120e", R="#e8dcc0", U="#8a5a4a"),
+    "ox":       dict(kind="cow", horns="long", B="#d9cdb8", S="#b8aa92", M="#8a7c66", H="#3a2a22", N="#3b3432", K="#151212",
+                     R="#efe6cc", U="#c9a8a0", face="#cfc2ac"),
+    "buffalo":  dict(kind="cow", horns="crescent", B="#4c5058", S="#373a41", M="#2a2c31", H="#23252a", N="#2f3136", K="#121316",
+                     R="#5b544c", U="#6a6266"),
+    "bison":    dict(kind="cow", hump=True, cape=True, horns="short", B="#8a5f3c", S="#6d4a2e", M="#2a1a10", H="#241812",
+                     N="#2a1e18", K="#0f0a08", P="#4a3020", Q="#35221a", R="#1f1a17", U="#6a4a3a"),
 }
 COMMON = dict(E="#1b1512", G="#5fbf4a", L="#f29aa0", T=None)
 

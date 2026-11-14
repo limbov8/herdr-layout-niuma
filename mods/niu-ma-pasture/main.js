@@ -1,5 +1,6 @@
 // NiuMa pasture: a meadow under far mountains, a creek and drifting clouds. Every agent is a
-// pixel horse or cow (sixteen breeds and sizes, picked by its address), scattered over the
+// pixel horse or cow (sixteen breeds and sizes, plus a bull, ox, water buffalo and bison;
+// picked when it arrives and kept with its spot), scattered over the
 // meadow and never on the water; nearer ones are larger.
 //   working  grazing, or drinking at the creek (head bobbing, tail swishing)
 //   idle     standing, tail swishing
@@ -49,6 +50,11 @@ const BREEDS = [
   { key: "brownswiss", kind: "cow", name: "Brown Swiss cow", size: 1.12 },
   { key: "appaloosa", kind: "horse", name: "Appaloosa", size: 0.95 },
   { key: "shire", kind: "horse", name: "Shire draft horse", size: 1.25 },
+  // Other cattle (they act like cows): added later, so see breedOf.
+  { key: "bull", kind: "cow", name: "Bull", size: 1.18 },
+  { key: "ox", kind: "cow", name: "Ox", size: 1.22 },
+  { key: "buffalo", kind: "cow", name: "Water buffalo", size: 1.12 },
+  { key: "bison", kind: "cow", name: "Bison", size: 1.2 },
 ];
 const STATUS = {
   working: { color: "#3d8be0", word: "Working", glyph: null },
@@ -80,9 +86,14 @@ const SKY_MODES = ["auto", "day", "evening", "night"];
 const SKY_NAMES = { auto: "Auto (follows the clock)", day: "Day", evening: "Evening", night: "Night" };
 const clockPhase = () => { const h = new Date().getHours(); return h < 6 || h >= 19 ? "night" : h >= 17 ? "evening" : "day"; };
 const statusOf = (a) => (STATUS[a.status] ? a.status : "idle");
-const breedOf = (address) => BREEDS[hash(address) % BREEDS.length];
+// An animal's breed is kept with its spot (`b`), picked from all of them when it arrives.
+// A spot saved before there were 20 breeds has none: it keeps the one it had then.
+const breedOf = (address, spot) => BREEDS.find((b) => b.key === spot?.b) ?? BREEDS[hash(address) % 16];
+const newBreed = (address) => BREEDS[hash(`breed${address}`) % BREEDS.length].key;
+// A remembered spot this version can use; anything else (an older format) is picked again.
+const goodSpot = (s) => !!s && [s.xf, s.t].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1);
 // Each animal's own size within its breed, 0.92 to 1.08.
-const sizeOf = (address) => breedOf(address).size * (0.92 + ((hash(`size${address}`) % 1000) / 1000) * 0.16);
+const sizeOf = (address, spot) => breedOf(address, spot).size * (0.92 + ((hash(`size${address}`) % 1000) / 1000) * 0.16);
 const poseOf = (st) => (st === "done" ? "sit" : st === "working" ? "graze" : "stand");
 // What it's working on: the last prompt typed into it (a "❯", "›" or ">" line on its
 // screen), else its title when that says more than the program's name.
@@ -109,7 +120,7 @@ const CRITTERS = ["rabbit", "squirrel", "bunny", "hedgehog"];
 const CW = 16, CH = 12, CFEET = 11.6;
 // Every sub-agent seen stays at least this long, so a quick one is still seen.
 const MIN_STAY = 6000;
-// What a horse or cow does when clicked, one after another per animal (sprites/*-act-*,
+// What a horse or cow does when clicked, a random one each time (sprites/*-act-*,
 // tools/actions.py, drawn on a 44 x 38 grid with the usual one at 4, 10). Each step: a frame,
 // how long it shows, and how far the animal leaves the ground (art units). Horses rear,
 // paw the air, buck, paw the ground, toss their head and piaffe; cows don't rear or piaffe:
@@ -288,7 +299,10 @@ const summary = (q, max = 44) => {
 export default class Pasture extends View {
   init(_props, cx) {
     this.size = { width: 1200, height: 340 };
-    this.spots = JSON.parse(localStorage.getItem("spots") ?? "{}");
+    // Spots survive a reinstall: drop any this version can't place, so they're picked again.
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem("spots") ?? "{}") ?? {}; } catch { saved = {}; }
+    this.spots = Object.fromEntries(Object.entries(saved).filter(([, s]) => goodSpot(s)));
     this.known = null;
     this.entering = {};
     this.asked = {};
@@ -373,7 +387,7 @@ export default class Pasture extends View {
       const p = g.scale(spot.t) * OBJ_SIZE, w = OW * p, x = spot.xf * g.W - w / 2;
       return { body: [x, y - OFEET * p, w, OFEET * p], tag: null };
     }
-    const p = g.scale(spot.t) * sizeOf(key), w = AW * p, x = spot.xf * g.W - w / 2;
+    const p = g.scale(spot.t) * sizeOf(key, spot), w = AW * p, x = spot.xf * g.W - w / 2;
     const fs = Math.min(13, Math.max(10.5, 2.1 * p + 1)), tagH = fs * 2 + 10;
     const tw = Math.max(150, Math.min(260, w + 70));
     return { body: [x + 3 * p, y - 26 * p, 30 * p, 26 * p],
@@ -396,13 +410,13 @@ export default class Pasture extends View {
   }
 
   // The least crowded of 120 dry spots, then the one farthest from everyone.
-  pick(key, g, others) {
+  pick(key, g, others, keep = {}) {
     const r = rand(hash(`spot${key}`));
     let best = null, bestCost = Infinity, bestFar = -1;
     for (let i = 0; i < 120; i++) {
-      const spot = { xf: 0.03 + r() * 0.94, t: r() };
+      const spot = { ...keep, xf: 0.03 + r() * 0.94, t: r() };
       const { body } = this.boxes(key, spot, g);
-      const p = g.scale(spot.t) * (key.startsWith("obj:") ? OBJ_SIZE : sizeOf(key));
+      const p = g.scale(spot.t) * (key.startsWith("obj:") ? OBJ_SIZE : sizeOf(key, spot));
       const x = spot.xf * g.W - (key.startsWith("obj:") ? OW : AW) * p / 2, y = g.feet(spot.t);
       if (body[0] < 4 || body[0] + body[2] > g.W - 4 || this.wet(g, x, y, p).hit) continue;
       const cost = Math.round(this.crowding(key, spot, g, others) * 50) / 50;
@@ -410,7 +424,7 @@ export default class Pasture extends View {
       for (const [k, o] of others) if (k !== key) far = Math.min(far, Math.hypot((spot.xf - o.xf) * 4, spot.t - o.t));
       if (cost < bestCost || (cost === bestCost && far > bestFar)) { best = spot; bestCost = cost; bestFar = far; }
     }
-    return best ?? { xf: 0.03 + r() * 0.94, t: r() };
+    return best ?? { ...keep, xf: 0.03 + r() * 0.94, t: r() };
   }
 
   // Remembered spots picked at another size can end up crowded: move those (later
@@ -425,7 +439,7 @@ export default class Pasture extends View {
     let moved = false;
     for (const k of keys) {
       if (kept.length && this.crowding(k, this.spots[k], g, kept) > 0.15) {
-        const spot = this.pick(k, g, kept);
+        const spot = this.pick(k, g, kept, this.spots[k].b ? { b: this.spots[k].b } : {});
         if (this.crowding(k, spot, g, kept) < this.crowding(k, this.spots[k], g, kept)) { this.spots[k] = spot; moved = true; }
       }
       kept.push([k, this.spots[k]]);
@@ -447,8 +461,8 @@ export default class Pasture extends View {
     let dirty = false;
     for (const addr of Object.keys(this.spots)) if (!addr.startsWith("obj:") && !live.has(addr)) { delete this.spots[addr]; dirty = true; }
     for (const a of list) {
-      if (parentOf[a.address] || this.spots[a.address]) continue;
-      this.spots[a.address] = this.pick(a.address, g, Object.entries(this.spots));
+      if (parentOf[a.address] || goodSpot(this.spots[a.address])) continue;
+      this.spots[a.address] = this.pick(a.address, g, Object.entries(this.spots), { b: newBreed(a.address) });
       dirty = true;
       if (this.known) {
         this.entering[a.address] = true;
@@ -507,7 +521,7 @@ export default class Pasture extends View {
       const st = statusOf(a);
       let face = (h >>> 5) & 1 ? "r" : "l";
       const y = g.feet(spot.t);
-      const p = g.scale(spot.t) * sizeOf(a.address);
+      const p = g.scale(spot.t) * sizeOf(a.address, spot);
       const sw = AW * p;
       let x = Math.min(g.W - sw - 4, Math.max(4, spot.xf * g.W - sw / 2));
       let drink = false;
@@ -525,7 +539,7 @@ export default class Pasture extends View {
       }
       if (!drink) x = this.dry(g, x, y, p);
       const entering = this.entering[a.address];
-      const item = { a, x, y, p, face, st, drink, breed: breedOf(a.address), entering };
+      const item = { a, x, y, p, face, st, drink, breed: breedOf(a.address, spot), entering };
       out.push(item); byAddr[a.address] = item;
     }
     return out;
@@ -741,15 +755,33 @@ export default class Pasture extends View {
       .on_hover((on, cx) => { if (on) this.ask(a.address, cx, 20000); });
     return div().absolute().left(x).top(y - FEET * p).w(w).h(h)
       .opacity(entering ? 0 : 1).transition("opacity", { duration: 900, easing: "ease-out" })
-      .children([body, badge, hit]);
+      .children([...this.shadow(g, x, 18 * p, FEET * p, 26 * p, p), body, badge, hit]);
+  }
+
+  // A soft shadow on the ground, cast away from the sun (at 74% across the sky): short
+  // under a high day sun, long under the low evening sun, faint under the moon. `left` is
+  // the element's page x; `mid`, `feet` and `bw` are in its own coordinates.
+  shadow(g, left, mid, feet, bw, p) {
+    const d = Math.max(-1, Math.min(1, (left + mid - g.W * 0.74) / (g.W * 0.5)));
+    const len = this.evening ? 0.55 + 0.45 * Math.abs(d) : this.night ? 0.2 : 0.12 + 0.18 * Math.abs(d);
+    const sw = bw * (0.8 + len * 0.9), sh = (this.evening ? 2.6 : 3.4) * p;
+    const cx = mid + Math.sign(d || 1) * len * bw * 0.55;
+    const tone = this.night ? "#0a12301f" : this.evening ? "#3a1e0a33" : "#1d3a1238";
+    return [
+      div().absolute().left(cx - sw / 2).top(feet - sh / 2).w(sw).h(sh).rounded_full().bg(tone),
+      div().absolute().left(cx - sw * 0.36).top(feet - sh * 0.32).w(sw * 0.72).h(sh * 0.64).rounded_full().bg(tone),
+    ];
   }
 
   // Plays its next action: each step a redraw, so a few over a second or two.
   perform(a, breed, cx) {
     if (this.acting[a.address]) return;
     const list = ACTIONS[breed.kind];
-    const n = (this.acts[a.address] ?? hash(a.address)) % list.length;
-    this.acts[a.address] = n + 1;
+    // A random move, never the same one twice in a row.
+    const last = this.acts[a.address];
+    let n = Math.floor(Math.random() * (last === undefined ? list.length : list.length - 1));
+    if (last !== undefined && n >= last) n++;
+    this.acts[a.address] = n;
     const act = { ...list[n], at: 0 };
     this.acting[a.address] = act;
     const next = (cx) => {
@@ -891,7 +923,7 @@ export default class Pasture extends View {
       ? pic("hop").top(0).loop("top", { from: 0, to: -2.5 * c.p, period: 340 + (seed % 120), easing: "ease-out" })
         .loop("left", { from: -3 * c.p, to: 3 * c.p, period: 2200 + (seed % 900) })
       : pic("sit").top(0).loop("top", { from: 0, to: -0.5 * c.p, period: 380 + (seed % 200) });
-    const els = [body];
+    const els = [...this.shadow(g, c.x, w / 2, CFEET * c.p, w * 0.7, c.p), body];
     if (c.status === "blocked") {
       const s = Math.max(12, 3 * c.p);
       els.push(div().absolute().left(w / 2 - s / 2).w(s).h(s).rounded(s * 0.3).bg(STATUS.blocked.color)

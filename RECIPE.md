@@ -57,8 +57,10 @@ t = 1). An animal's art pixel is `(3 + 3t) × k` screen pixels, `k = height / 32
 so a near cow is about 216px wide at the default height and a far one about 108px.
 
 **Animals** (one per agent). 36 × 28 art units, drawn at 3 pixels per unit (108 × 84),
-facing left or right. Sixteen breeds, each with its own size; each animal also varies
-0.92–1.08 on top:
+facing left or right. Twenty breeds, each with its own size; each animal also varies
+0.92–1.08 on top. A new animal's breed is picked from all twenty (by its address) and
+saved with its spot as `b`; a spot saved without one uses the first sixteen, so animals
+from before the last four were added keep their breed:
 
 | Breed | Size | Look |
 |---|---|---|
@@ -78,9 +80,19 @@ facing left or right. Sixteen breeds, each with its own size; each animal also v
 | Angus cow | 1.05 | black, no horns |
 | Belted Galloway | 0.95 | black with a white belt, no horns |
 | Brown Swiss cow | 1.12 | grey-brown `#8e7c6c`, dark muzzle |
+| Bull | 1.18 | dark brown `#4a2c20`, a muscled crest over the shoulders, short thick horns, a brass `#d9a934` nose ring |
+| Ox | 1.22 | pale `#d9cdb8`, long horns sweeping out and up |
+| Water buffalo | 1.12 | slate `#4c5058`, big crescent horns curving back, ridged |
+| Bison | 1.2 | `#8a5f3c` hindquarters, a high hump and a shaggy dark `#4a3020` cape over the front half, head and beard, short black horns |
 
 Each is shaded (lighter top edge, darker bottom edge) with a one-pixel dark outline, an
-eye with a white highlight, nostrils and a mouth line. No udders.
+eye with a white highlight, nostrils and a mouth line. No udders. The bull, ox, buffalo
+and bison act like cows.
+
+**Shadows**: under every animal and pet, two stacked soft ellipses on the ground at its
+feet, cast away from the sun (which sits at 74% across): by day short (0.12–0.30 of the
+body width past it, tone `#1d3a1238`), in the evening long and flat (0.55–1.0, `#3a1e0a33`),
+at night faint (`#0a12301f`). They stay on the ground while an animal hops or bucks.
 
 - **Name tag** over the head, always shown: a rounded 7px box `#10201ad9` with a 1px
   `#ffffff30` border (`#e5484d` when it needs you). Line 1: a short summary of the last
@@ -156,7 +168,9 @@ scale (27–54px), scattered like the animals:
   its whole body off the creek, ties going to the one farthest from everyone. Crowding is
   overlap with every other animal and terminal object, as a share of its body: bodies
   fully, a name tag over a body half, two tags a quarter. It keeps that spot (remembered
-  across restarts); animals never slide around. Remembered spots more than 15% crowded
+  across restarts in `localStorage` `spots`; on load any spot this version can't use,
+  e.g. one saved by an older version, is dropped and picked again); animals never slide
+  around. Remembered spots more than 15% crowded
   move once at start and when the meadow's size changes a lot (later addresses move
   first). They're drawn far to near.
 - **Questions.** The tag's summary is the last prompt line on
@@ -212,8 +226,8 @@ scale (27–54px), scattered like the animals:
   pins it instead.
 - **Clicks.** An animal or its tag: focus its pane (`pane.focus`, or `terminal.peek` for
   one without a pane). Pressing on any of them doesn't drag the window.
-- **Click actions.** Clicking an animal also plays its next move (each animal starts at
-  its own, picked by address; a sitting one gets up for it). Horses: rear up (1.3 s),
+- **Click actions.** Clicking an animal also plays a random move, never the same one
+  twice in a row (a sitting one gets up for it). Horses: rear up (1.3 s),
   paw the air (rearing, front legs folding and striking, 3 × 0.46 s), buck (lifted 2.5
   art units, hind legs kicked out behind), paw the ground (with a `#c9a77a` dust puff),
   toss the head (up 18° / down 9°, three times), piaffe (diagonal pairs lifting in turn,
@@ -230,7 +244,9 @@ scale (27–54px), scattered like the animals:
   `\ `) and shown quoted where needed. `Reset to default` puts the default back in the
   field. `Save` re-reads the file, sets each agent's `programs.<key>.run` (or removes it
   when it equals the default, keeping the file's other entries), writes it atomically
-  only if it hasn't changed since, shows `Saved. New agents start with these commands.`
+  only if it hasn't changed since, shows `Saved at <time>. New agents start with these
+  commands.`, turns the button to `Saving…` then `✓ Saved` for 2 s, and posts a success
+  toast `Agent settings saved` (an error toast if it fails),
   and bumps shared `niu-ma.agents` so the bar reloads its agent buttons. Save also runs
   `layout.hide` or `layout.show` on the `shell` column per the second switch (Herdr keeps
   that across restarts; the switch reads it back from `layout()`'s `hidden`). Running agents
@@ -285,8 +301,8 @@ and/or `{ sky: "day" | "evening" | "night" }` to pin the sky):
   only timers are a 1 s tick while a bubble's clock or a flash is showing, one
   `timer.after` per step of a click action, 2.5 s screen
   reads for working agents and a 60 s clock check for the sky.
-- `sprites/`: 483 SVGs, generated by `tools/sprites.py` (Python 3, no packages):
-  `<breed>-stand|graze-body|graze-head|sit-<r|l>`, `<breed>-tail-<a|b>-<r|l>` (16 breeds),
+- `sprites/`: 579 SVGs, generated by `tools/sprites.py` (Python 3, no packages):
+  `<breed>-stand|graze-body|graze-head|sit-<r|l>`, `<breed>-tail-<a|b>-<r|l>` (20 breeds),
   `<breed>-act-<frame>-<r|l>` (horses: `rear-a|rear-b|buck|paw-a|paw-b|toss-up|toss-down|
   trot-a|trot-b`; cows: `hop|paw-a|paw-b|shake-a|shake-b|moo`, on a 44 × 38 grid with the
   usual 36 × 28 one at (4, 10), tail included),
@@ -401,8 +417,12 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
 - Every agent is a horse or cow with a name tag (question summary, `space · tab`) and a
   status badge under its feet; the bottom-centre pills count them. Hovering one shows no
   second card.
-- Clicking a horse repeatedly cycles rear, paw the air, buck, paw, toss, piaffe; clicking
-  a cow cycles hop, paw, shake, moo (with `Moo!`), each back to its pose after 1–2 s.
+- Clicking a horse plays one of rear, paw the air, buck, paw, toss, piaffe; a cow (or bull,
+  ox, buffalo, bison) one of hop, paw, shake, moo (with `Moo!`), never the same twice in a
+  row, each back to its pose after 1–2 s.
+- Starting several new agents brings in some of the bull, ox, buffalo and bison, and
+  every animal has a shadow pointing away from the sun.
+- Saving in ⚙ shows `✓ Saved` on the button and a toast, even when nothing changed.
 - A Claude Code agent in a narrow pane that fans out 2 sub-agents shows 2 critters, not 4.
 - A working agent grazes (or drinks at the creek), a blocked one gets the red `!` sign,
   a done one lies down, an idle one stands swishing its tail.

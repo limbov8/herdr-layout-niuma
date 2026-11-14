@@ -212,6 +212,18 @@ def cow_torso(L, b, dy=0.0):
     L.poly(shifted([(9, 10.5), (21, 10.3), (21, 19.8), (9, 19.95)], dy=dy), "B")
     L.ellipse(20.0, 10.9 + dy, 2.6, 1.3, "B")
     L.ellipse(8.0, 11.0 + dy, 2.2, 1.2, "B")
+    if b.get("crest"):
+        L.ellipse(20.2, 10.6 + dy, 3.8, 2.0, "B")
+    if b.get("hump"):
+        L.ellipse(18.6, 9.8 + dy, 6.2, 3.9, "B")
+        L.ellipse(21.4, 11.2 + dy, 3.2, 3.0, "B")
+    if b.get("cape"):
+        # Bison: the shaggy dark front half, its edge ragged, a fringe under the chest.
+        L.recolor(None, lambda x, y, k: "P" if k == "B" and x > 14.2 + math.sin(y * 2.3) * 0.7 else None)
+        for x in (16.0, 17.6, 19.2, 20.8, 22.4):
+            L.poly(shifted([(x - 0.8, 19.0), (x + 0.8, 19.0), (x + 0.1, 21.2)], dy=dy), "P")
+        for x in (17, 19, 21):
+            L.strand(shifted([(x, 7.6), (x + 0.6, 9.8)], dy=dy), 0.16, 0.16, "Ps")
     if b.get("belly"):
         L.recolor(None, lambda x, y, k: "Y" if k == "B" and y > 17.4 + dy and 8 < x < 22 else None)
     if b.get("shaggy"):
@@ -241,9 +253,15 @@ def cow_head_up(L, b, dy=0.0, happy=False):
     L.poly(shifted([(25.0, 7.2), (26.4, 5.8), (29.8, 5.8), (31.4, 7.4), (32.4, 10.2), (31.6, 12.6), (27.6, 13.0),
                     (25.6, 11.0)], dy=dy), "F")
     L.ellipse(31.4, 11.3 + dy, 2.4, 1.9, "N")
+    if b.get("cape"):
+        L.recolor(None, lambda x, y, k: "P" if k in ("B", "F") and x > 21.0 and y < 19.0 + dy else None)
+        L.poly(shifted([(28.0, 12.0), (30.8, 12.4), (30.0, 16.2), (28.8, 15.4), (28.2, 14.0)], dy=dy), "P")
+        L.poly(shifted([(25.0, 6.6), (29.4, 5.4), (29.8, 7.6), (27.4, 8.6), (25.6, 8.4)], dy=dy), "M")
     horns(L, b, base=(27.2, 6.2 + dy), far=(29.0, 5.9 + dy), up=True)
     face(L, eye=(28.6, 8.6 + dy), nose=(32.9, 10.9 + dy), mouth=((30.4, 12.85 + dy), (32.4, 12.6 + dy)),
          happy=happy, blush=(30.0, 10.7 + dy), nose2=(31.0, 10.6 + dy))
+    if b.get("ring"):
+        L.strand(shifted([(32.0, 11.2), (31.7, 12.4), (32.4, 13.1), (33.1, 12.4), (32.9, 11.3)], dy=dy), 0.2, 0.2, "Z")
     if b.get("shaggy"):
         L.poly(shifted([(25.2, 6.0), (30.6, 5.6), (31.0, 8.6), (29.8, 8.1), (29.0, 9.4), (28.0, 8.3), (27.0, 9.2),
                         (25.8, 8.2)], dy=dy), "M")
@@ -259,8 +277,13 @@ def cow_head_down(L, b):
     L.poly([(26.4, 17.8), (29.0, 16.8), (31.0, 18.8), (32.8, 22.8), (33.4, 25.0), (32.4, 26.7), (29.4, 26.9),
             (27.6, 24.2), (26.2, 20.6)], "F")
     L.ellipse(31.6, 25.4, 2.0, 1.6, "N")
+    if b.get("cape"):
+        L.recolor(None, lambda x, y, k: "P" if k in ("B", "F") and x > 21.0 else None)
+        L.poly([(26.6, 17.6), (30.0, 16.6), (30.6, 19.0), (28.0, 19.8)], "M")
     horns(L, b, base=(27.9, 17.4), far=(29.6, 17.0), up=False)
     face(L, eye=(29.7, 20.3), nose=(32.9, 25.7), mouth=((30.4, 26.7), (32.2, 26.8)), nose2=(31.7, 25.5))
+    if b.get("ring"):
+        L.strand([(32.2, 25.9), (31.9, 26.6), (32.6, 27.0), (33.3, 26.5)], 0.2, 0.2, "Z")
     if b.get("shaggy"):
         L.poly([(26.6, 17.4), (30.2, 16.6), (31.4, 19.6), (30.2, 19.3), (29.6, 20.8), (28.6, 19.6), (27.4, 20.4)], "M")
     grass(L, 33.8)
@@ -270,6 +293,21 @@ def horns(L, b, base, far, up):
     if b.get("polled"):
         return
     bx, by = base; fx, fy = far
+    style = b.get("horns")
+    if style == "long":
+        L.strand([(bx - 0.3, by), (bx - 2.2, by - 0.9), (bx - 4.2, by - 2.4), (bx - 4.8, by - 4.4)], 0.8, 0.3, "R")
+        L.strand([(fx, fy), (fx + 2.0, fy - 1.1), (fx + 3.7, fy - 2.9), (fx + 3.9, fy - 4.6)], 0.75, 0.28, "R")
+        return
+    if style == "crescent":
+        L.strand([(bx, by), (bx - 2.6, by - 0.3), (bx - 4.7, by - 1.7), (bx - 5.2, by - 3.6), (bx - 4.0, by - 4.8)], 1.05, 0.3, "R")
+        L.strand([(fx, fy), (fx + 1.6, fy - 1.3), (fx + 2.1, fy - 3.0), (fx + 0.9, fy - 4.1)], 0.9, 0.28, "R")
+        for t in (0.35, 0.6):
+            L.strand([(bx - 4.6 * t - 0.4, by - 2.4 * t - 0.6), (bx - 4.6 * t + 0.4, by - 2.4 * t + 0.4)], 0.12, 0.12, "Rs")
+        return
+    if style == "short":
+        L.strand([(bx - 0.2, by + 0.2), (bx - 1.4, by - 0.5), (bx - 1.6, by - 1.7)], 0.75, 0.35, "R")
+        L.strand([(fx, fy + 0.2), (fx + 1.0, fy - 0.7), (fx + 1.1, fy - 1.8)], 0.7, 0.33, "R")
+        return
     if b.get("shaggy"):
         if up:
             L.strand([(bx - 0.4, by), (bx - 2.0, by - 1.4), (bx - 3.6, by - 1.8), (bx - 4.6, by - 3.0)], 0.75, 0.32, "R")
@@ -342,6 +380,7 @@ def palette(b, common):
     B, S = b["B"], b["S"]
     p.setdefault("P", B); p.setdefault("Q", S)
     p.setdefault("R", "#efe6cc"); p.setdefault("U", "#f3a8b4")
+    p.setdefault("Z", "#d9a934"); p["Rs"] = mix(p["R"], "#000000", 0.3)
     p["U"] = mix(p["U"], S, 0.35)
     F = b.get("face") or B
     Y = b.get("belly") or S
