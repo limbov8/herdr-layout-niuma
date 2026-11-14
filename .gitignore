@@ -3,3 +3,9 @@ jsconfig.json
 *.d.ts
 __pycache__/
 .DS_Store
+# Herdr's own state and leftovers if this folder is used as a Herdr home
+*.error
+*.reset-*
+*.old-*
+.state/
+herdr-shot.png

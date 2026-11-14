@@ -1,13 +1,19 @@
 # NiuMa — a Herdr layout
 
 Your coding agents graze in a pixel-art pasture: horses, cows, a bull, an ox, a water
-buffalo and a bison (twenty breeds) that graze, drink, wait with a red `!` or lie down
+buffalo, a bison and a rare unicorn (twenty-one breeds) that graze, drink, wait with a red `!` or lie down
 when they're done, cast shadows from the sun, and rear, buck, hop or moo when clicked; sub-agents are rabbits,
 squirrels and hedgehogs; plain terminals are campfires, cooking pots and magic crystals
 that burn while a command runs. Your spaces are pills in the bar under the pasture, panels
 sit side by side across the full width (no sidebar), and a shell runs along the bottom.
 
-![NiuMa](preview.png)
+![NiuMa by day](preview.png)
+
+| Evening | Night |
+|---|---|
+| ![NiuMa in the evening](previews/evening.png) | ![NiuMa at night](previews/night.png) |
+
+Click the sun to change the time of day. One new agent in ten or so arrives as a unicorn.
 
 See [RECIPE.md](RECIPE.md) for everything it shows and does, and how it's built.
 
@@ -69,5 +75,6 @@ know), and it may ask before adding the optional zsh hook.
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals
-  in every state (that's how `preview.png` was taken); `"sky": "evening"` pins the sky.
+  in every state (that's how `preview.png` and `previews/` were taken); `"sky": "evening"`
+  pins the sky.
 - The sprites are generated: `python3 mods/niu-ma-pasture/tools/sprites.py`.

@@ -159,6 +159,8 @@ def horse_head_up(L, b, dy=0.0, happy=False):
     L.strand(shifted([(26.2, 4.2), (24.6, 6.3), (22.6, 9.0)], dy=dy), 0.18, 0.18, "Mh")
     face(L, eye=(29.3, 5.6 + dy), nose=(33.9, 8.3 + dy), mouth=((33.1, 9.65 + dy), (34.4, 9.45 + dy)),
          happy=happy, blush=(30.6, 7.6 + dy))
+    if b.get("horn"):
+        unicorn_horn(L, (29.4, 4.2 + dy), (31.6, 0.25 + dy))
 
 
 def horse_head_down(L, b, bite=True):
@@ -175,8 +177,31 @@ def horse_head_down(L, b, bite=True):
         L.poly([(x - 0.8, y - 0.2), (x + 0.6, y - 0.6), (x + 0.3, y + 1.3)], "M")
     L.strand([(21.0, 11.0), (24.0, 12.6), (26.6, 15.4)], 0.18, 0.18, "Mh")
     face(L, eye=(30.3, 20.5), nose=(33.4, 25.6), mouth=((32.0, 26.4), (33.0, 26.6)))
+    if b.get("horn"):
+        unicorn_horn(L, (30.4, 18.6), (34.6, 17.4))
     if bite:
         grass(L, 34.4)
+
+
+def unicorn_horn(L, base, tip):
+    """A golden spiral horn from the forehead: a tapering cone with darker twists."""
+    L.strand([base, tip], 0.62, 0.12, "Z")
+    (bx, by), (tx, ty) = base, tip
+    for t in (0.22, 0.44, 0.66):
+        x, y = bx + (tx - bx) * t, by + (ty - by) * t
+        w = 0.55 * (1 - t) + 0.12
+        L.strand([(x - w, y + w * 0.2), (x + w * 0.3, y - w * 0.9)], 0.11, 0.11, "Zs")
+
+
+RAINBOW = ["#ff9ecb", "#ffc49b", "#fff09a", "#a8f0c0", "#9fd8ff", "#c8a8ff"]
+
+
+def rainbow(layer, b):
+    """A unicorn's mane and tail in pastel bands down their length."""
+    if not b.get("rainbow"):
+        return
+    layer.recolor(None, lambda x, y, k: (f"M{int((y + x * 0.35) / 2.1) % 6}" if k == "M"
+                                         else "Mw" if k == "Mh" else None))
 
 
 def horse_tail(L, swish):
@@ -381,6 +406,10 @@ def palette(b, common):
     p.setdefault("P", B); p.setdefault("Q", S)
     p.setdefault("R", "#efe6cc"); p.setdefault("U", "#f3a8b4")
     p.setdefault("Z", "#d9a934"); p["Rs"] = mix(p["R"], "#000000", 0.3)
+    p["Zs"] = mix(p["Z"], "#000000", 0.3)
+    for i, c in enumerate(RAINBOW):
+        p[f"M{i}"] = c
+    p["Mw"] = "#ffffff"
     p["U"] = mix(p["U"], S, 0.35)
     F = b.get("face") or B
     Y = b.get("belly") or S
@@ -425,6 +454,7 @@ def breed(name, b, common, write):
     horse = b["kind"] == "horse"
 
     def finish(L, under=None, dy=0):
+        rainbow(L, b)
         spots(L, b, dy)
         shade(L)
         outline(L, under)
@@ -452,6 +482,7 @@ def breed(name, b, common, write):
     for tag, swish in (("a", False), ("b", True)):
         t = Layer()
         (horse_tail if horse else cow_tail)(t, swish)
+        rainbow(t, b)
         outline(t)
         write(f"{name}-tail-{tag}", svg, t, pal)
 

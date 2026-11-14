@@ -96,6 +96,7 @@ def frame(b, pieces):
     for draw, pivot, deg, dx, dy in pieces:
         turn(out, part(draw, b), pivot, deg, dx, dy)
     out.cut_below(27.0 + OY)
+    hd.rainbow(out, b)
     hd.shade(out)
     hd.outline(out)
     return out

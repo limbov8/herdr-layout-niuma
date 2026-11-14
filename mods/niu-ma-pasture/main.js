@@ -55,6 +55,8 @@ const BREEDS = [
   { key: "ox", kind: "cow", name: "Ox", size: 1.22 },
   { key: "buffalo", kind: "cow", name: "Water buffalo", size: 1.12 },
   { key: "bison", kind: "cow", name: "Bison", size: 1.2 },
+  // Rare: about one new agent in ten (see newBreed). Acts like a horse; sparkles.
+  { key: "unicorn", kind: "horse", name: "Unicorn", size: 1.0 },
 ];
 const STATUS = {
   working: { color: "#3d8be0", word: "Working", glyph: null },
@@ -89,7 +91,8 @@ const statusOf = (a) => (STATUS[a.status] ? a.status : "idle");
 // An animal's breed is kept with its spot (`b`), picked from all of them when it arrives.
 // A spot saved before there were 20 breeds has none: it keeps the one it had then.
 const breedOf = (address, spot) => BREEDS.find((b) => b.key === spot?.b) ?? BREEDS[hash(address) % 16];
-const newBreed = (address) => BREEDS[hash(`breed${address}`) % BREEDS.length].key;
+const newBreed = (address) => (hash(`unicorn${address}`) % 10 === 0 ? "unicorn"
+  : BREEDS[hash(`breed${address}`) % (BREEDS.length - 1)].key);
 // A remembered spot this version can use; anything else (an older format) is picked again.
 const goodSpot = (s) => !!s && [s.xf, s.t].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1);
 // Each animal's own size within its breed, 0.92 to 1.08.
@@ -204,8 +207,8 @@ function demo(now) {
   const names = { "web-ui": "web-ui", "api-server": "api-server", engine: "engine", notebooks: "notebooks" };
   // Fixed spots, spread out and clear of the creek and each other's tags.
   const spots = {
-    d1: { xf: 0.79, t: 0.42 }, d2: { xf: 0.09, t: 0.3 }, d3: { xf: 0.42, t: 0.05 }, d4: { xf: 0.22, t: 0.5 },
-    d5: { xf: 0.37, t: 0.28 }, d6: { xf: 0.95, t: 0.12 },
+    d1: { xf: 0.79, t: 0.42 }, d2: { xf: 0.09, t: 0.3 }, d3: { xf: 0.42, t: 0.05, b: "bison" },
+    d4: { xf: 0.22, t: 0.5, b: "unicorn" }, d5: { xf: 0.37, t: 0.28 }, d6: { xf: 0.95, t: 0.12, b: "bull" },
     "obj:p1": { xf: 0.69, t: 0.12 }, "obj:p2": { xf: 0.31, t: 0.86 }, "obj:p3": { xf: 0.05, t: 0.72 }, "obj:p4": { xf: 0.89, t: 0.75 },
   };
   return { list, all, subs, names, spots };
@@ -733,6 +736,17 @@ export default class Pasture extends View {
       }
     }
 
+    // A unicorn twinkles round its horn (still poses only: an action moves the horn).
+    if (breed.key === "unicorn" && !act) {
+      const tipY = { stand: 0.3, graze: 17.4, sit: 4.3 }[poseOf(st)] * p;
+      const tipX = (face === "r" ? { stand: 31.6, graze: 34.6, sit: 31.6 } : { stand: 4.4, graze: 1.4, sit: 4.4 })[poseOf(st)] * p;
+      const seed = hash(a.address);
+      [[-2.2, -1.6, 900], [2.0, -0.4, 1300], [0.4, 1.8, 1100]].forEach(([dx, dy, per], i) => {
+        const s = (i === 1 ? 1.6 : 1.1) * p;
+        parts.push(div().absolute().left(tipX + dx * p - s / 2).top(tipY + dy * p - s / 2).size(s).rounded_full()
+          .bg(["#fff6b8", "#ffffff", "#ffc8ec"][i]).loop("opacity", { from: 0, to: 1, period: per + (seed % 300) }));
+      });
+    }
     const body = div().absolute().left(0).top(-lift).w(w).h(h).transition("top", { duration: 200, easing: "ease-out" })
       .children(parts);
 

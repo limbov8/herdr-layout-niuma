@@ -36,6 +36,8 @@ BREEDS = {
                      (11, 12, 1.0, 0.9), (14, 13, 1.0, 1.0), (10, 18, 1.1, 0.8), (16, 15, 0.9, 0.9), (13, 17, 0.9, 0.8)]),
     "shire":    dict(kind="horse", B="#3b2a22", S="#2b1e18", M="#15100d", H="#d9d2c4", N="#4e3a30", K="#100b09",
                      blaze="#f4f1ea", socks="#f4f1ea"),
+    "unicorn":  dict(kind="horse", horn=True, rainbow=True, B="#fbf8ff", S="#e2dcf0", M="#ff9ecb", H="#c9b26a",
+                     N="#f6d6e4", K="#b88aa0", Z="#f2c94c"),
     # cows
     "holstein": dict(kind="cow", B="#f7f6f1", S="#d9d7cf", M="#2b2b2b", H="#3a3532", N="#f3b3b3", K="#b0605f",
                      P="#2b2b2b", Q="#1d1d1d", R="#efe6cc", U="#f3a8b4",
