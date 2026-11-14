@@ -8,7 +8,8 @@
 // Over each animal: a name tag with a summary of the last question it was asked, its space
 // and tab. Under its feet, centred: its status badge. The status counts sit at the bottom
 // centre, between the two runs of an oak fence along the front.
-// Hover for the whole question; click to go there. Animals keep their spot; new ones fade in.
+// Click to go there; it also rears, bucks, paws or tosses its head (a horse), or hops,
+// paws, shakes its head or moos (a cow). Animals keep their spot; new ones fade in.
 // Sub-agents are small animals (rabbits, squirrels, hedgehogs) around their horse or cow:
 // Herdr's own (terminals an agent started with `hc run`) and Claude Code's (its Task/Agent
 // calls, read off the agent's screen). Busy, they nibble and hop about; finished, they run
@@ -108,6 +109,29 @@ const CRITTERS = ["rabbit", "squirrel", "bunny", "hedgehog"];
 const CW = 16, CH = 12, CFEET = 11.6;
 // Every sub-agent seen stays at least this long, so a quick one is still seen.
 const MIN_STAY = 6000;
+// What a horse or cow does when clicked, one after another per animal (sprites/*-act-*,
+// tools/actions.py, drawn on a 44 x 38 grid with the usual one at 4, 10). Each step: a frame,
+// how long it shows, and how far the animal leaves the ground (art units). Horses rear,
+// paw the air, buck, paw the ground, toss their head and piaffe; cows don't rear or piaffe:
+// they kick up their heels, paw the ground, shake their head and moo.
+const ACT_W = 44, ACT_H = 38, ACT_X = 4, ACT_Y = 10;
+const steps = (a, b, n, ms, lift = 0) => Array.from({ length: n * 2 }, (_, i) => [i % 2 ? b : a, ms, i % 2 ? 0 : lift]);
+const ACTIONS = {
+  horse: [
+    { key: "rear", steps: [["rear-a", 1300, 0]] },
+    { key: "paw-air", steps: steps("rear-a", "rear-b", 3, 230) },
+    { key: "buck", steps: [["buck", 260, 2.5], ["buck", 520, 0]] },
+    { key: "paw", steps: steps("paw-a", "paw-b", 3, 260), dust: "paw-b" },
+    { key: "toss", steps: steps("toss-up", "toss-down", 3, 230) },
+    { key: "piaffe", steps: steps("trot-a", "trot-b", 4, 280, 0.8) },
+  ],
+  cow: [
+    { key: "hop", steps: [["hop", 300, 4], ["hop", 260, 0], ["hop", 300, 4], ["hop", 260, 0]] },
+    { key: "paw", steps: steps("paw-a", "paw-b", 3, 280), dust: "paw-b" },
+    { key: "shake", steps: steps("shake-a", "shake-b", 3, 170) },
+    { key: "moo", steps: [["moo", 1500, 0]], say: "Moo!" },
+  ],
+};
 // Plain terminals' objects. "mixed" picks one per terminal; or "pot", "firepit", "crystal".
 const OBJ_VARIANT = "mixed";
 const OBJ_KINDS = ["firepit", "pot", "crystal"];
@@ -185,10 +209,25 @@ const subAgents = (text) => {
   const found = prompts(lines);
   const start = found.length ? found[found.length - 1].i : 0;
   const out = [];
-  // Each name's runs in order: a name seen again after it finished is a new run.
+  // Each name's runs in order: a name seen again after it finished is a new run. The
+  // same sub-agent shows up to three times (its call, the launch list, the task list),
+  // cut short with "…" or wrapped in a narrow pane: a name that starts another is it.
   const runs = new Map();
+  const same = (a, b) => a === b || (Math.min(a.length, b.length) >= 6 && (a.startsWith(b) || b.startsWith(a)));
   const add = (name, done) => {
-    const key = name.slice(0, 80);
+    const cut = /(?:…|\.\.\.)\s*$/u.test(name);
+    let key = name.replace(/\s*(?:…|\.\.\.)\s*$/u, "").replace(/\s+/g, " ").trim().slice(0, 80);
+    if (!key) return;
+    // A cut name only ever finishes the one sub-agent it can be; it never adds one.
+    const matches = [...runs.keys()].filter((k) => same(k, key));
+    const known = matches.includes(key) ? key : matches.length === 1 ? matches[0] : null;
+    if (matches.length > 1 && !known) return;
+    if (cut && known && !done) return;
+    if (known && key.length > known.length) {
+      const list = runs.get(known);
+      for (const sub of list) sub.name = key;
+      runs.delete(known); runs.set(key, list);
+    } else if (known) key = known;
     const list = runs.get(key) ?? [];
     const last = list[list.length - 1];
     if (last && !(last.done && !done)) { if (done) last.done = true; return; }
@@ -197,7 +236,14 @@ const subAgents = (text) => {
   };
   let footer = false;
   for (let i = start; i < lines.length; i++) {
-    const l = lines[i];
+    let l = lines[i];
+    // A wrapped `⏺ Agent "…` or `⏺ 2 background agents` line: join its continuation.
+    for (let j = i + 1; j < Math.min(lines.length, i + 4) && /^\s*[⏺●]\s+/u.test(l) && /^\s{2,}\S/u.test(lines[j])
+      && ((/^\s*[⏺●]\s+(?:Agent|Task)\s+"/u.test(l) && !/^\s*[⏺●]\s+(?:Agent|Task)\s+".*"/u.test(l))
+        || /^\s*[⏺●]\s+\d+\s+(?:background\s+)?agents?\s*$/u.test(l)); j++) {
+      l = `${l.trimEnd()} ${lines[j].trim()}`;
+      i = j;
+    }
     // The task list under the prompt: `• main`, then `○ general-purpose  what it does  5s · ↓ 46.7k tokens`
     if (/^\s*[•●◉⏺]\s+main\s*$/u.test(l)) { footer = true; continue; }
     if (footer) {
@@ -245,7 +291,6 @@ export default class Pasture extends View {
     this.spots = JSON.parse(localStorage.getItem("spots") ?? "{}");
     this.known = null;
     this.entering = {};
-    this.hovered = null;
     this.asked = {};
     this.subs = {};
     this.critterAt = {};
@@ -254,6 +299,8 @@ export default class Pasture extends View {
     this.fgSince = {};
     this.fgDone = {};
     this.acked = {};
+    this.acting = {};
+    this.acts = {};
     this.hoverObj = null;
     // Elapsed times tick and flashes end: redraw once a second only while one is showing.
     cx.timer.every(1000, (cx) => { if (this.ticking) cx.notify(); });
@@ -376,7 +423,6 @@ export default class Pasture extends View {
     const scene = [...placed.map((p) => ({ y: p.y, el: () => this.animal(p, g) })),
       ...critters.map((c) => ({ y: c.y, el: () => this.critter(c, g) })),
       ...objs.map((o) => ({ y: o.y, el: () => this.object(o, g) }))].sort((a, b) => a.y - b.y);
-    const hovered = placed.find((p) => p.a.address === this.hovered);
 
     const pinned = SKY_MODES.includes(props()?.sky) ? props().sky : this.skyMode;
     const phase = pinned === "auto" ? this.clock : pinned;
@@ -395,7 +441,6 @@ export default class Pasture extends View {
         ...(this.evening ? [div().absolute().left(0).top(g.yH - g.H * 0.2).w(g.W).h(g.H * 0.82).bg("#ff8a3d14")] : []),
         this.counts(list, g),
         ...(list.length ? [] : [this.empty(g)]),
-        ...(hovered ? [this.bubble(hovered, g)] : []),
       ]);
   }
 
@@ -604,8 +649,28 @@ export default class Pasture extends View {
           .loop("opacity", { from: 1, to: 0.1, period: 1400 }));
       }
     } else parts = [...tails(), layer("stand")];
+    // Clicked: its action's current frame over everything else, lifted for a hop or buck.
+    const act = this.acting[a.address];
+    let lift = 0;
+    if (act) {
+      const step = act.steps[act.at];
+      lift = step[2] * p;
+      const aw = ACT_W * p, ah = ACT_H * p;
+      parts = [image(`${DIR}/${breed.key}-act-${step[0]}-${face}.svg`).absolute().left(-ACT_X * p).top(-ACT_Y * p).w(aw).h(ah)];
+      if (act.dust === step[0]) {
+        const hx = face === "r" ? 31 * p : 5 * p;
+        parts.push(div().absolute().left(hx - 3 * p).top(FEET * p - 2 * p).w(6 * p).h(2.5 * p).rounded_full()
+          .bg("#c9a77a").loop("opacity", { from: 0.7, to: 0.1, period: 400 }));
+      }
+      if (act.say) {
+        parts.push(div().absolute().left(face === "r" ? 30 * p : -6 * p).top(-2 * p).px(6).py(2).rounded(8)
+          .bg("#fffdf6").border_1().border_color("#3b3328").text_size(Math.max(11, 2.6 * p)).font_bold()
+          .text_color("#3b3328").child(act.say));
+      }
+    }
 
-    const body = div().absolute().left(0).top(0).w(w).h(h).children(parts);
+    const body = div().absolute().left(0).top(-lift).w(w).h(h).transition("top", { duration: 200, easing: "ease-out" })
+      .children(parts);
 
     // Status badge, under its feet in the middle.
     const info = STATUS[st];
@@ -620,13 +685,28 @@ export default class Pasture extends View {
       .opacity(entering ? 0 : 1).transition("opacity", { duration: 900, easing: "ease-out" })
       .cursor_pointer()
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-      .on_click(() => this.go(a))
-      .on_hover((on, cx) => {
-        if (on) { this.hovered = a.address; this.ask(a.address, cx, 20000); }
-        else if (this.hovered === a.address) this.hovered = null;
-        cx.notify();
-      })
+      .on_click((_e, cx) => { this.perform(a, breed, cx); this.go(a); })
+      // Its name tag already says what a hover card would: hovering just rereads the question.
+      .on_hover((on, cx) => { if (on) this.ask(a.address, cx, 20000); })
       .children([body, badge]);
+  }
+
+  // Plays its next action: each step a redraw, so a few over a second or two.
+  perform(a, breed, cx) {
+    if (this.acting[a.address]) return;
+    const list = ACTIONS[breed.kind];
+    const n = (this.acts[a.address] ?? hash(a.address)) % list.length;
+    this.acts[a.address] = n + 1;
+    const act = { ...list[n], at: 0 };
+    this.acting[a.address] = act;
+    const next = (cx) => {
+      if (this.acting[a.address] !== act) return;
+      if (++act.at >= act.steps.length) delete this.acting[a.address];
+      else cx.timer.after(act.steps[act.at][1], next);
+      cx.notify();
+    };
+    cx.timer.after(act.steps[0][1], next);
+    cx.notify();
   }
 
   go(a) {
@@ -980,43 +1060,6 @@ export default class Pasture extends View {
       }
     }
     return els;
-  }
-
-  bubble(item, g) {
-    const { a, x, y, p, face, st, breed } = item;
-    const info = STATUS[st];
-    const bw = 280, bh = 64;
-    const headX = x + (face === "r" ? 30 : 6) * p;
-    const top = y - FEET * p - (st === "blocked" ? Math.max(16, 6.5 * p) + 10 : 4) - bh;
-    const left = Math.min(g.W - bw - 6, Math.max(6, headX - 34));
-    const below = top < 4;
-    const by = below ? Math.min(g.H - bh - 4, y + 6) : top;
-    const tailX = Math.min(bw - 18, Math.max(10, headX - left - 5));
-    const who = breed.name;
-    return div().absolute().left(left).top(by).w(bw)
-      .child(div().w(bw).px(10).py(6).rounded(10).bg("#fffdf6").border_1().border_color("#3b3328").shadow_md()
-        .flex().flex_col().gap(2)
-        .child(div().flex().flex_row().items_center().gap(6).text_size(11.5)
-          .child(div().font_bold().text_color("#2b2420").truncate().child(`📁 ${a.space_name}`))
-          .child(div().text_size(10).text_color("#8a7d6a").truncate().child(`· ${who}`)))
-        .child(div().text_size(11).text_color("#3b3328").truncate().child(`💬 ${question(a, this.asked[a.address]?.text)}`))
-        .child(div().flex().flex_row().items_center().gap(5).text_size(10)
-          .child(div().size(7).rounded_full().bg(info.color))
-          .child(div().text_color(info.color).font_semibold().child(info.word))
-          .child(div().text_color("#8a7d6a").truncate().child(`· tab ${a.tab_name || a.tab_index + 1} · ${a.program?.name ?? ""}`))))
-      .child(this.tail(tailX, below ? -7 : bh - 1, below));
-  }
-
-  // The bubble's pointer: a small triangle with the bubble's outline on its two sides.
-  tail(x, y, up) {
-    const tri = up ? [[0, 8], [6, 0], [12, 8]] : [[0, 0], [6, 8], [12, 0]];
-    let fill = PathBuilder.fill().move_to(tri[0][0], tri[0][1]);
-    for (const [px, py] of tri.slice(1)) fill = fill.line_to(px, py);
-    const edge = PathBuilder.stroke(1).move_to(tri[0][0], tri[0][1]).line_to(tri[1][0], tri[1][1]).line_to(tri[2][0], tri[2][1]);
-    return div().absolute().left(x).top(y).w(12).h(8).children([
-      window.paint_path(fill.close().build(), "#fffdf6").absolute().top(0).left(0).size_full(),
-      window.paint_path(edge.build(), "#3b3328").absolute().top(0).left(0).size_full(),
-    ]);
   }
 
   counts(list, g) {

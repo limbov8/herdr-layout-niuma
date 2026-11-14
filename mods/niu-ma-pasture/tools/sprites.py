@@ -8,6 +8,7 @@
 #   <breed>-graze-head-<r|l>.svg  head down: neck, head, a bite of grass (it bobs)
 #   <breed>-tail-<a|b>-<r|l>.svg  the tail, hanging (a) and swished (b)
 #   <breed>-sit-<r|l>.svg         lying down, eyes closed, happy (tail included)
+#   <breed>-act-<frame>-<r|l>.svg what it does when clicked: rear, buck, paw, moo... (actions.py)
 #   critter-<kind>-<sit|hop>-<r|l>.svg  sub-agents' small animals (critters.py)
 #   obj-*.svg                     plain terminals' pot, fire pit and crystal (objects.py)
 import math
@@ -434,8 +435,10 @@ if __name__ == "__main__":
         for side, mirror in (("r", False), ("l", True)):
             with open(os.path.join(OUT, f"{name}-{side}.svg"), "w") as f:
                 f.write(render(layer, pal, mirror))
+    import actions
     for n, b in BREEDS.items():
         hd.breed(n, b, COMMON, write_hd)
+        actions.breed_actions(n, b, COMMON, write_hd)
     import critters
     critters.all_critters(hd.svg, write_hd)
     import objects
