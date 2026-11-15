@@ -356,8 +356,7 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
   a temp folder, then back up, copy, `herdr-app check`; `open` / `xdg-open` for Sponsor.
 - Shared/stored: shared `niu-ma.agents` (bumped on Save), shared `niu-ma.agent-shell`
   (`false` when the switch is off; absent means on), shared `niu-ma.update`
-  (`{current, latest, checked, error}`, the last check, every 6 h), shared
-  `niu-ma.update-check` (`false` turns the check off), `localStorage` `defaults`
+  (`{current, latest, checked, error}`, the last check, every 6 h), `localStorage` `defaults`
   (each agent's default command).
 - Icons from Herdr's `workspace-chrome`: `git-branch.svg`, `plus.svg`, `settings.svg`,
   `terminal.svg`.

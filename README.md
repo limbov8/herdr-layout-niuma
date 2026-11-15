@@ -72,8 +72,8 @@ know), and it may ask before adding the optional zsh hook.
   command into a shell panel, so the agent gets your `~/.zshrc` (e.g. env for Claude on
   Vertex or Bedrock); Herdr's own menus start agents without it. **Show the shell at the
   bottom** hides or shows the bottom shell (it keeps running while hidden).
-- **Updates.** The bar asks GitHub for the latest `VERSION` every 6 hours (switch it off
-  in ⚙) and shows an **Update** button next to ⚙ when there's a newer NiuMa. It and ⚙
+- **Updates.** The bar asks GitHub for the latest `VERSION` every 6 hours and
+  shows an **Update** button next to ⚙ when there's a newer NiuMa. It and ⚙
   show the installed and latest version and what changed (`CHANGELOG.md`); **Upgrade**
   does the manual install for you: downloads `main`, keeps your previous files in
   `~/.config/herdr-app/.niu-ma-backup/`, copies the layout and both mods over, adds new
