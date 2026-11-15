@@ -13,7 +13,7 @@ sit side by side across the full width (no sidebar), and a shell runs along the 
 |---|---|
 | ![NiuMa in the evening](previews/evening.png) | ![NiuMa at night](previews/night.png) |
 
-Click the sun to change the time of day. One new agent in ten or so arrives as a unicorn. In November and December, about one in five arrives as a Christmas moose.
+Hold ⌃ Ctrl (or ⌘) and drag an animal to move it. Click the sun to change the time of day. One new agent in ten or so arrives as a unicorn. In November and December, about one in five arrives as a Christmas moose.
 
 See [RECIPE.md](RECIPE.md) for everything it shows and does, and how it's built.
 

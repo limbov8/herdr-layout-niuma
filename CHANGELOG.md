@@ -4,6 +4,13 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.3.0 — 2026-11-15
+
+- **Move animals.** Hold ⌃ Ctrl (or ⌘) and drag an animal to put it somewhere else: sideways
+  across the meadow, or up and down to send it farther or bring it nearer (it shrinks and
+  grows as it goes). It never lands in the creek, and the new spot is kept across restarts.
+  A plain click still plays a trick.
+
 ## 1.2.2 — 2026-11-15
 
 - Animals at the back of the meadow are a third smaller, so depth reads more clearly; the

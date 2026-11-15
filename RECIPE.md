@@ -416,6 +416,11 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
 
 ## Done when
 
+- Ctrl-dragging (or ⌘-dragging) an animal moves it with the pointer, growing as it comes
+  nearer and shrinking as it goes farther; dropping it in the creek puts it on the nearer
+  bank; the spot survives a restart; a plain click still plays a trick, and the release
+  after a drag doesn't.
+
 - In November or December, a spot saved with `"b": "moose"` shows a dark brown moose with
   pale antlers hung with red, gold, green and blue lights that twinkle, a red scarf with a
   green stripe and a gold bell, a red nose and a short tail; in any other month the same
