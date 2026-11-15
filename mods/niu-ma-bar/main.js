@@ -412,7 +412,6 @@ export default class Bar extends View {
         .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
-        .child(this.btn("feedback", "Feedback", () => openUrl(FEEDBACK_URL), { tip: "Report a bug or suggest an idea on GitHub" }))
         .child(this.btn("agents-cancel", "Close", () => overlay && closeOverlay(overlay)))
         .child(this.btn("agents-save", this.saved ? "✓ Saved" : this.saving ? "Saving…" : "Save", (_e, cx) => {
           if (this.saving) return;
@@ -523,10 +522,14 @@ export default class Bar extends View {
         .child(fact("Latest", latestText))
         .when(!!chip, (el) => el.child(div().text_size(10.5).px(7).py(2).rounded(10).border_1().border_color(chip[1]).text_color(chip[1]).child(chip[0])))
         .child(div().flex_1())
-        .child(this.btn("check-now", this.checkingNow ? "Checking…" : "Check now", (_e, cx) => this.checkNow(cx)))
-        .when(sponsor, (el) => el.child(this.btn("sponsor", "Sponsor", () => openUrl(SPONSOR_URL),
+        .child(this.btn("check-now", this.checkingNow ? "Checking…" : "Check now", (_e, cx) => this.checkNow(cx))))
+      // Support and feedback on a row of their own, so the version row never overflows.
+      .when(sponsor, (el) => el.child(div().flex().flex_row().items_center().gap(8)
+        .child(this.btn("sponsor", "Sponsor", () => openUrl(SPONSOR_URL),
           { icon: "mods/niu-ma-bar/heart.svg", tint: true, tip: "Support NiuMa on GitHub Sponsors" }))
-          .child(this.btn("coffee", "☕ Coffee", () => openUrl(COFFEE_URL), { tip: "Buy me a coffee" }))))
+        .child(this.btn("coffee", "☕ Buy me a coffee", () => openUrl(COFFEE_URL)))
+        .child(div().flex_1())
+        .child(this.btn("feedback", "Feedback", () => openUrl(FEEDBACK_URL), { tip: "Report a bug or suggest an idea on GitHub" }))))
       .when(!!u.error && !this.checkingNow, (el) => el.child(div().text_size(11).text_color(t.muted).truncate()
         .child(`Last check failed: ${u.error}`)));
     if (!newer && this.upgradeState !== "done") return card;

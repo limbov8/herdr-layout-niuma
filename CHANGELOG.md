@@ -13,7 +13,7 @@ both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latte
   creek. Both are kept across restarts, and a plain click still does what it did.
 - The update check always runs every 6 hours; its switch is gone from ⚙.
 - **Feedback.** A Feedback button in ⚙ (and a link in the update window) opens a new GitHub
-  issue.
+  issue. In ⚙, Sponsor, Buy me a coffee and Feedback sit on their own row under the version.
 
 ## 1.2.2 — 2026-11-15
 
