@@ -1,6 +1,7 @@
 // NiuMa pasture: a meadow under far mountains, a creek and drifting clouds. Every agent is a
 // pixel horse or cow (sixteen breeds and sizes, plus a bull, ox, water buffalo and bison;
-// picked when it arrives and kept with its spot), scattered over the
+// picked when it arrives and kept with its spot; a rare unicorn, and in November and
+// December a Christmas moose), scattered over the
 // meadow and never on the water; nearer ones are larger.
 //   working  grazing, or drinking at the creek (head bobbing, tail swishing)
 //   idle     standing, tail swishing
@@ -57,7 +58,18 @@ const BREEDS = [
   { key: "bison", kind: "cow", name: "Bison", size: 1.2 },
   // Rare: about one new agent in ten (see newBreed). Acts like a horse; sparkles.
   { key: "unicorn", kind: "horse", name: "Unicorn", size: 1.0 },
+  // Seasonal: in November and December about one new agent in five (see newBreed). Acts
+  // like a horse; its antler lights twinkle. Out of season a saved moose shows as another breed.
+  { key: "moose", kind: "horse", name: "Christmas moose", size: 1.22 },
 ];
+const REGULAR = BREEDS.length - 2; // the breeds before the unicorn and the moose
+const MOOSE_SEASON = () => new Date().getMonth() >= 10; // November, December
+// Where the moose's antler lights are (art px, facing right) in each still pose.
+const MOOSE_LIGHTS = {
+  stand: [[23.0, 2.2], [24.6, 1.4], [26.0, 2.4], [30.8, 1.8], [32.4, 1.6]],
+  graze: [[23.6, 14.8], [25.2, 14.1], [26.4, 15.0], [30.6, 14.8], [32.0, 14.6]],
+  sit: [[23.0, 6.2], [24.6, 5.4], [26.0, 6.4], [30.8, 5.8], [32.4, 5.6]],
+};
 const STATUS = {
   working: { color: "#3d8be0", word: "Working", glyph: null },
   blocked: { color: "#e5484d", word: "Needs you", glyph: "!" },
@@ -90,9 +102,13 @@ const clockPhase = () => { const h = new Date().getHours(); return h < 6 || h >=
 const statusOf = (a) => (STATUS[a.status] ? a.status : "idle");
 // An animal's breed is kept with its spot (`b`), picked from all of them when it arrives.
 // A spot saved before there were 20 breeds has none: it keeps the one it had then.
-const breedOf = (address, spot) => BREEDS.find((b) => b.key === spot?.b) ?? BREEDS[hash(address) % 16];
+const breedOf = (address, spot) => {
+  if (spot?.b === "moose" && !MOOSE_SEASON()) return BREEDS[hash(`breed${address}`) % REGULAR];
+  return BREEDS.find((b) => b.key === spot?.b) ?? BREEDS[hash(address) % 16];
+};
 const newBreed = (address) => (hash(`unicorn${address}`) % 10 === 0 ? "unicorn"
-  : BREEDS[hash(`breed${address}`) % (BREEDS.length - 1)].key);
+  : MOOSE_SEASON() && hash(`moose${address}`) % 5 === 0 ? "moose"
+  : BREEDS[hash(`breed${address}`) % REGULAR].key);
 // A remembered spot this version can use; anything else (an older format) is picked again.
 const goodSpot = (s) => !!s && [s.xf, s.t].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1);
 // Each animal's own size within its breed, 0.92 to 1.08.
@@ -745,6 +761,16 @@ export default class Pasture extends View {
         const s = (i === 1 ? 1.6 : 1.1) * p;
         parts.push(div().absolute().left(tipX + dx * p - s / 2).top(tipY + dy * p - s / 2).size(s).rounded_full()
           .bg(["#fff6b8", "#ffffff", "#ffc8ec"][i]).loop("opacity", { from: 0, to: 1, period: per + (seed % 300) }));
+      });
+    }
+    // A Christmas moose's antler lights glow on and off (still poses only).
+    if (breed.key === "moose" && !act) {
+      const seed = hash(a.address);
+      MOOSE_LIGHTS[poseOf(st)].forEach(([lx, ly], i) => {
+        const s = 1.5 * p, x = (face === "r" ? lx : AW - lx) * p;
+        parts.push(div().absolute().left(x - s / 2).top(ly * p - s / 2).size(s).rounded_full()
+          .bg(["#ff4d5a88", "#ffd84a88", "#4fd27a88", "#5fb8ff88"][i % 4])
+          .loop("opacity", { from: 0.1, to: 1, period: 900 + ((seed >> (i * 3)) % 700) }));
       });
     }
     const body = div().absolute().left(0).top(-lift).w(w).h(h).transition("top", { duration: 200, easing: "ease-out" })

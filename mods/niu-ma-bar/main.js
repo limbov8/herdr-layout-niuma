@@ -401,7 +401,6 @@ export default class Bar extends View {
     const overlay = props()?.overlay;
     return div().id("agents-dialog").size_full().flex().flex_col().gap(10).p(16).bg(t.popover)
       .child(div().id("agents-scroll").flex_1().min_h_0().overflow_y_scrollbar().flex().flex_col().gap(10).pr(4)
-        .child(this.renderVersion(t, cx, { sponsor: true }))
         .child(div().text_size(15).font_semibold().text_color(t.foreground).child("Agent start commands"))
         .child(div().text_size(11.5).text_color(t.muted)
           .child("What the agent buttons, ⌘⇧T and Herdr's menus run to start each agent. Saved as its run in programs.json."))
@@ -411,7 +410,8 @@ export default class Bar extends View {
         .child(this.toggle(t, "show-shell", "Show the shell at the bottom", this.showShell, (v) => { this.showShell = v; },
           "Off hides the bottom shell and its bar; the shell keeps running and comes back when you turn this on."))
         .child(this.toggle(t, "update-check", `Check for updates every ${CHECK_HOURS} hours`, this.autoCheck, (v) => { this.autoCheck = v; },
-          "Asks GitHub for the latest NiuMa version and shows an update icon next to ⚙ when there's a newer one. Nothing else is sent.")))
+          "Asks GitHub for the latest NiuMa version and shows an update icon next to ⚙ when there's a newer one. Nothing else is sent."))
+        .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
         .child(this.btn("agents-cancel", "Close", () => overlay && closeOverlay(overlay)))

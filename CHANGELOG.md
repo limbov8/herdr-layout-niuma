@@ -4,6 +4,14 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.2.0 — 2026-11-15
+
+- **Christmas moose.** In November and December about one new agent in five arrives as a
+  moose with palmate antlers hung with twinkling lights, a red scarf with a gold bell and a
+  red nose. It acts like a horse when clicked. Outside those months a moose shows as one
+  of the regular breeds.
+- The version and Sponsor card moved to the bottom of the ⚙ dialog.
+
 ## 1.1.0 — 2026-11-14
 
 - **Update check.** The bar checks GitHub for a newer NiuMa every 6 hours and shows an

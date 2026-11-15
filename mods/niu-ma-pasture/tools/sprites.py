@@ -38,6 +38,9 @@ BREEDS = {
                      blaze="#f4f1ea", socks="#f4f1ea"),
     "unicorn":  dict(kind="horse", horn=True, rainbow=True, B="#fbf8ff", S="#e2dcf0", M="#ff9ecb", H="#c9b26a",
                      N="#f6d6e4", K="#b88aa0", Z="#f2c94c"),
+    # Seasonal: only arrives in November and December. Acts like a horse.
+    "moose":    dict(kind="horse", antlers=True, stubby=True, A="#c4a774", B="#6b4630", S="#4f3323", M="#3a2618", H="#241811",
+                     N="#8c654a", K="#e0303a", Z="#f2c94c", socks="#c9b394"),
     # cows
     "holstein": dict(kind="cow", B="#f7f6f1", S="#d9d7cf", M="#2b2b2b", H="#3a3532", N="#f3b3b3", K="#b0605f",
                      P="#2b2b2b", Q="#1d1d1d", R="#efe6cc", U="#f3a8b4",

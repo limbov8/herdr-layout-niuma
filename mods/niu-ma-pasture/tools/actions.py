@@ -105,8 +105,8 @@ def frame(b, pieces):
 def horse_frames(b):
     torso = lambda L: hd.horse_torso(L, b)
     head = lambda L: hd.horse_head_up(L, b)
-    tail = lambda L: hd.horse_tail(L, False)
-    swish = lambda L: hd.horse_tail(L, True)
+    tail = lambda L: hd.horse_tail(L, False, b)
+    swish = lambda L: hd.horse_tail(L, True, b)
     four = lambda moved=None: (lambda L: legs(L, b, True, "fh ff nh nf", moved))
     hip, shoulder, neck = (11.5, 18.0), (22.5, 18.0), (20.0, 13.6)
 

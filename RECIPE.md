@@ -60,7 +60,7 @@ t = 1). An animal's art pixel is `(3 + 3t) × k` screen pixels, `k = height / 32
 so a near cow is about 216px wide at the default height and a far one about 108px.
 
 **Animals** (one per agent). 36 × 28 art units, drawn at 3 pixels per unit (108 × 84),
-facing left or right. Twenty-one breeds, each with its own size; each animal also varies
+facing left or right. Twenty-two breeds (the moose only in November and December), each with its own size; each animal also varies
 0.92–1.08 on top. A new animal's breed is picked when it arrives (by its address): a
 unicorn one time in ten, else one of the other twenty. It's saved with its spot as `b`; a
 spot saved without one uses the first sixteen, so animals from before the later breeds
@@ -415,6 +415,12 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
   (a default install), `hc` on the shell's PATH, macOS key names (`cmd-…`) in `keys.json`.
 
 ## Done when
+
+- In November or December, a spot saved with `"b": "moose"` shows a dark brown moose with
+  pale antlers hung with red, gold, green and blue lights that twinkle, a red scarf with a
+  green stripe and a gold bell, a red nose and a short tail; in any other month the same
+  spot shows a regular breed. New agents arrive as a moose about one time in five, only in
+  those two months.
 
 - ⚙ shows the installed version (`mods/niu-ma-bar/VERSION`) and the latest (`VERSION` on
   `main`, via raw.githubusercontent.com) with **Check now** and **Sponsor** (opens
