@@ -366,7 +366,7 @@ export default class Pasture extends View {
     return {
       W, H, k, yH,
       feet: (t) => g0 + t * (g1 - g0),
-      scale: (t) => (3.0 + 1.8 * t) * k, // the nearest are 1.6× the farthest
+      scale: (t) => (2.0 + 2.8 * t) * k, // the nearest are 2.4× the farthest
       // The creek, by y: centre and half width.
       creek: (y) => {
         const t = Math.min(1, Math.max(0, (y - yH) / (H - yH)));

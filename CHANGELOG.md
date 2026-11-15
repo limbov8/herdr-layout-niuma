@@ -4,6 +4,11 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.2.2 — 2026-11-15
+
+- Animals at the back of the meadow are a third smaller, so depth reads more clearly; the
+  front ones keep their size (the nearest are now 2.4× the farthest).
+
 ## 1.2.1 — 2026-11-15
 
 - Animals near the front are smaller: 1.6× the size of the farthest ones instead of 2×.
