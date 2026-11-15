@@ -416,10 +416,11 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
 
 ## Done when
 
-- Ctrl-dragging (or ⌘-dragging) an animal moves it with the pointer, growing as it comes
-  nearer and shrinking as it goes farther; dropping it in the creek puts it on the nearer
-  bank; the spot survives a restart; a plain click still plays a trick, and the release
-  after a drag doesn't.
+- Ctrl-clicking (or ⌘-clicking) an animal turns it to face the other way, with no trick;
+  Shift+Ctrl-dragging an animal or a fire pit, pot or crystal moves it with the pointer,
+  growing as it comes nearer and shrinking as it goes farther; dropping it in the creek
+  puts it on the nearer bank; direction and spot survive a restart; a plain click still
+  plays a trick (or opens the terminal), and the release after a drag doesn't.
 
 - In November or December, a spot saved with `"b": "moose"` shows a dark brown moose with
   pale antlers hung with red, gold, green and blue lights that twinkle, a red scarf with a

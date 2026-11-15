@@ -6,10 +6,11 @@ both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latte
 
 ## 1.3.0 — 2026-11-15
 
-- **Move animals.** Hold ⌃ Ctrl (or ⌘) and drag an animal to put it somewhere else: sideways
-  across the meadow, or up and down to send it farther or bring it nearer (it shrinks and
-  grows as it goes). It never lands in the creek, and the new spot is kept across restarts.
-  A plain click still plays a trick.
+- **Turn animals round.** ⌃ Ctrl-click (or ⌘-click) an animal to make it face the other way.
+- **Move things.** Hold ⇧ Shift + ⌃ Ctrl (or ⇧⌘) and drag an animal, a fire pit, a cooking pot
+  or a crystal to put it somewhere else: sideways across the meadow, or up and down to send
+  it farther or bring it nearer (it shrinks and grows as it goes). Nothing lands in the
+  creek. Both are kept across restarts, and a plain click still does what it did.
 
 ## 1.2.2 — 2026-11-15
 
