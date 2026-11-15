@@ -28,7 +28,7 @@
 // { sky: "day" | "evening" | "night" } pins the sky over the click choice.
 // Art: sprites/ (tools/sprites.py). Scenery is drawn natively with gradients and paths.
 import { View, div, image, PathBuilder, Background } from "gpui-kit";
-import { agents, terminals, spaces, panes, run, hc, settings, props } from "herdr";
+import { agents, terminals, spaces, panes, run, hc, settings, props, layout } from "herdr";
 
 const DIR = "mods/niu-ma-pasture/sprites";
 const AW = 36, AH = 28, FEET = 27;
@@ -84,6 +84,15 @@ const CLOUDS = [
   { img: "cloud1", w: 40, h: 16, y: 0.11, s: 0.8, from: 0.95, to: 0.4, period: 170000, morph: 12000 },
 ];
 
+function findNode(node, id) {
+  if (!node || typeof node !== "object") return null;
+  if (node.id === id) return node;
+  for (const c of node.children ?? []) {
+    const f = findNode(c, id);
+    if (f) return f;
+  }
+  return null;
+}
 function hash(s) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
@@ -1062,6 +1071,8 @@ export default class Pasture extends View {
   // Herdr's terminals that aren't agents (and the bottom shell): what each is doing now.
   objects(all, list, g) {
     const now = Date.now();
+    const shellNode = findNode(layout(), "shell");
+    const shellHidden = !shellNode || !!shellNode.hidden;
     const agentsHere = new Set(list.map((a) => a.address));
     const spaceName = this.demo?.names ?? Object.fromEntries(spaces().map((sp) => [sp.id.split("/").pop(), sp.name]));
     const out = [];
@@ -1072,6 +1083,8 @@ export default class Pasture extends View {
       const L = t.labels ?? {};
       if (t.state !== "live" || agentsHere.has(t.address) || (t.parent && agentsHere.has(t.parent))) continue;
       if (!L["herdr.space"] && L["niu-ma.role"] !== "shell") continue;
+      // The bottom shell's object follows ⚙'s "Show the shell at the bottom".
+      if (L["niu-ma.role"] === "shell" && shellHidden) continue;
       const key = `obj:${t.address}`;
       keep.add(key);
       if (!this.spots[key]) {

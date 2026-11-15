@@ -4,6 +4,11 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.3.1 — 2026-11-15
+
+- The bottom shell's fire pit (or pot, or crystal) now leaves the pasture when the bottom
+  shell is hidden in ⚙, and comes back when it's shown.
+
 ## 1.3.0 — 2026-11-15
 
 - **Turn animals round.** ⌃ Ctrl-click (or ⌘-click) an animal to make it face the other way.
