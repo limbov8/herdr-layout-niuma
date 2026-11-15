@@ -26,6 +26,7 @@ const RAW = `https://raw.githubusercontent.com/${REPO}/refs/heads/main`;
 const TARBALL = `https://codeload.github.com/${REPO}/tar.gz/refs/heads/main`;
 const SPONSOR_URL = "https://github.com/sponsors/limbov8";
 const COFFEE_URL = "https://buymeacoffee.com/limbov8";
+const FEEDBACK_URL = "https://github.com/limbov8/herdr-layout-niuma/issues/new";
 const CHECK_HOURS = 6;
 const UPDATE_KEY = "niu-ma.update";
 
@@ -415,6 +416,7 @@ export default class Bar extends View {
         .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
+        .child(this.btn("feedback", "Feedback", () => openUrl(FEEDBACK_URL), { tip: "Report a bug or suggest an idea on GitHub" }))
         .child(this.btn("agents-cancel", "Close", () => overlay && closeOverlay(overlay)))
         .child(this.btn("agents-save", this.saved ? "✓ Saved" : this.saving ? "Saving…" : "Save", (_e, cx) => {
           if (this.saving) return;
@@ -559,6 +561,8 @@ export default class Bar extends View {
           .on_click(() => openUrl(SPONSOR_URL)).child("♥ Sponsor NiuMa"))
         .child(div().id("coffee-link").text_size(11.5).text_color(t.accent).cursor_pointer()
           .on_click(() => openUrl(COFFEE_URL)).child("☕ Buy me a coffee"))
+        .child(div().id("feedback-link").text_size(11.5).text_color(t.accent).cursor_pointer()
+          .on_click(() => openUrl(FEEDBACK_URL)).child("Feedback"))
         .child(div().flex_1())
         .child(this.btn("upgrade-close", "Close", () => overlay && closeOverlay(overlay))));
   }

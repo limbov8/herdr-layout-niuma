@@ -82,6 +82,7 @@ know), and it may ask before adding the optional zsh hook.
   access: `raw.githubusercontent.com` and `codeload.github.com`.
 - **Sponsor.** ⚙ has buttons for [GitHub Sponsors](https://github.com/sponsors/limbov8) and
   [Buy Me a Coffee](https://buymeacoffee.com/limbov8).
+- **Feedback.** ⚙'s Feedback button opens a [new issue](https://github.com/limbov8/herdr-layout-niuma/issues/new).
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals

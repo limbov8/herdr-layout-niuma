@@ -11,6 +11,8 @@ both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latte
   or a crystal to put it somewhere else: sideways across the meadow, or up and down to send
   it farther or bring it nearer (it shrinks and grows as it goes). Nothing lands in the
   creek. Both are kept across restarts, and a plain click still does what it did.
+- **Feedback.** A Feedback button in ⚙ (and a link in the update window) opens a new GitHub
+  issue.
 
 ## 1.2.2 — 2026-11-15
 
