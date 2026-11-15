@@ -20,12 +20,13 @@ const SHELL_NAME = "niu-ma-shell";
 // ---- Versions and upgrades ---------------------------------------------------
 // The repo's VERSION and CHANGELOG.md on main are the latest release; the installed one is
 // this mod's own VERSION file. The bar checks every CHECK_HOURS (shared "niu-ma.update":
-// {current, latest, checked, error}); shared "niu-ma.update-check" false turns it off.
+// {current, latest, checked, error}). It always runs.
 const REPO = "limbov8/herdr-layout-niuma";
 const RAW = `https://raw.githubusercontent.com/${REPO}/refs/heads/main`;
 const TARBALL = `https://codeload.github.com/${REPO}/tar.gz/refs/heads/main`;
 const SPONSOR_URL = "https://github.com/sponsors/limbov8";
 const COFFEE_URL = "https://buymeacoffee.com/limbov8";
+const FEEDBACK_URL = "https://github.com/limbov8/herdr-layout-niuma/issues/new";
 const CHECK_HOURS = 6;
 const UPDATE_KEY = "niu-ma.update";
 
@@ -202,7 +203,7 @@ export default class Bar extends View {
     // The update check: due every CHECK_HOURS (or when the installed version changed, after
     // an upgrade), looked at every 15 minutes so a sleeping laptop catches up on waking.
     const due = (cx) => {
-      if (shared("niu-ma.update-check") === false || this.checking) return;
+      if (this.checking) return;
       this.checking = true;
       cx.spawn(async (cx) => {
         const u = shared(UPDATE_KEY);
@@ -326,7 +327,6 @@ export default class Bar extends View {
     this.rows = AGENT_KEYS.map((a) => ({ ...a, input: InputState.new({ placeholder: a.key }), def: null, installed: null }));
     this.status = "Loading…";
     this.inShell = shared("niu-ma.agent-shell") !== false;
-    this.autoCheck = shared("niu-ma.update-check") !== false;
     this.showShell = !!findNode(layout(), "shell") && !findNode(layout(), "shell").hidden;
     cx.spawn(async (cx) => {
       try {
@@ -370,7 +370,6 @@ export default class Bar extends View {
       if (!Object.keys(file.programs).length) delete file.programs;
       await writeTextFile(this.path, `${JSON.stringify(file, null, 2)}\n`, current);
       setShared("niu-ma.agent-shell", this.inShell);
-      setShared("niu-ma.update-check", this.autoCheck);
       // The bottom shell: hidden, not removed, so it keeps running and comes back as it was.
       if (findNode(layout(), "shell")) run(this.showShell ? "layout.show" : "layout.hide", { id: "shell" });
       setShared("niu-ma.agents", Date.now());
@@ -410,8 +409,6 @@ export default class Bar extends View {
           "The agent buttons and ⌘⇧T open a shell panel and type the command, so it gets your ~/.zshrc (env for Vertex, Bedrock, proxies). Off: Herdr starts it directly, without ~/.zshrc."))
         .child(this.toggle(t, "show-shell", "Show the shell at the bottom", this.showShell, (v) => { this.showShell = v; },
           "Off hides the bottom shell and its bar; the shell keeps running and comes back when you turn this on."))
-        .child(this.toggle(t, "update-check", `Check for updates every ${CHECK_HOURS} hours`, this.autoCheck, (v) => { this.autoCheck = v; },
-          "Asks GitHub for the latest NiuMa version and shows an update icon next to ⚙ when there's a newer one. Nothing else is sent."))
         .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
@@ -525,10 +522,14 @@ export default class Bar extends View {
         .child(fact("Latest", latestText))
         .when(!!chip, (el) => el.child(div().text_size(10.5).px(7).py(2).rounded(10).border_1().border_color(chip[1]).text_color(chip[1]).child(chip[0])))
         .child(div().flex_1())
-        .child(this.btn("check-now", this.checkingNow ? "Checking…" : "Check now", (_e, cx) => this.checkNow(cx)))
-        .when(sponsor, (el) => el.child(this.btn("sponsor", "Sponsor", () => openUrl(SPONSOR_URL),
+        .child(this.btn("check-now", this.checkingNow ? "Checking…" : "Check now", (_e, cx) => this.checkNow(cx))))
+      // Support and feedback on a row of their own, so the version row never overflows.
+      .when(sponsor, (el) => el.child(div().flex().flex_row().items_center().gap(8)
+        .child(this.btn("sponsor", "Sponsor", () => openUrl(SPONSOR_URL),
           { icon: "mods/niu-ma-bar/heart.svg", tint: true, tip: "Support NiuMa on GitHub Sponsors" }))
-          .child(this.btn("coffee", "☕ Coffee", () => openUrl(COFFEE_URL), { tip: "Buy me a coffee" }))))
+        .child(this.btn("coffee", "☕ Buy me a coffee", () => openUrl(COFFEE_URL)))
+        .child(div().flex_1())
+        .child(this.btn("feedback", "Feedback", () => openUrl(FEEDBACK_URL), { tip: "Report a bug or suggest an idea on GitHub" }))))
       .when(!!u.error && !this.checkingNow, (el) => el.child(div().text_size(11).text_color(t.muted).truncate()
         .child(`Last check failed: ${u.error}`)));
     if (!newer && this.upgradeState !== "done") return card;
@@ -559,6 +560,8 @@ export default class Bar extends View {
           .on_click(() => openUrl(SPONSOR_URL)).child("♥ Sponsor NiuMa"))
         .child(div().id("coffee-link").text_size(11.5).text_color(t.accent).cursor_pointer()
           .on_click(() => openUrl(COFFEE_URL)).child("☕ Buy me a coffee"))
+        .child(div().id("feedback-link").text_size(11.5).text_color(t.accent).cursor_pointer()
+          .on_click(() => openUrl(FEEDBACK_URL)).child("Feedback"))
         .child(div().flex_1())
         .child(this.btn("upgrade-close", "Close", () => overlay && closeOverlay(overlay))));
   }

@@ -4,6 +4,17 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.3.0 — 2026-11-15
+
+- **Turn animals round.** ⌃ Ctrl-click (or ⌘-click) an animal to make it face the other way.
+- **Move things.** Hold ⇧ Shift + ⌃ Ctrl (or ⇧⌘) and drag an animal, a fire pit, a cooking pot
+  or a crystal to put it somewhere else: sideways across the meadow, or up and down to send
+  it farther or bring it nearer (it shrinks and grows as it goes). Nothing lands in the
+  creek. Both are kept across restarts, and a plain click still does what it did.
+- The update check always runs every 6 hours; its switch is gone from ⚙.
+- **Feedback.** A Feedback button in ⚙ (and a link in the update window) opens a new GitHub
+  issue. In ⚙, Sponsor, Buy me a coffee and Feedback sit on their own row under the version.
+
 ## 1.2.2 — 2026-11-15
 
 - Animals at the back of the meadow are a third smaller, so depth reads more clearly; the

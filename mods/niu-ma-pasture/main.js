@@ -333,6 +333,8 @@ export default class Pasture extends View {
     this.fgDone = {};
     this.acked = {};
     this.acting = {};
+    this.drag = null; // ⇧⌃-drag moving an animal or object: {key, x0, y0, xf0, t0, xf, t, moved}
+    this.flip = null; // ⌃-click on an animal: turn it round on release
     this.acts = {};
     this.hoverObj = null;
     // Elapsed times tick and flashes end: redraw once a second only while one is showing.
@@ -364,8 +366,9 @@ export default class Pasture extends View {
     const yH = Math.round(H * 0.38);
     const g0 = yH + H * 0.07, g1 = H - 16 * k;
     return {
-      W, H, k, yH,
+      W, H, k, yH, z,
       feet: (t) => g0 + t * (g1 - g0),
+      depth: (y) => Math.min(1, Math.max(0, (y - g0) / (g1 - g0))),
       scale: (t) => (2.0 + 2.8 * t) * k, // the nearest are 2.4× the farthest
       // The creek, by y: centre and half width.
       creek: (y) => {
@@ -458,7 +461,8 @@ export default class Pasture extends View {
     let moved = false;
     for (const k of keys) {
       if (kept.length && this.crowding(k, this.spots[k], g, kept) > 0.15) {
-        const spot = this.pick(k, g, kept, this.spots[k].b ? { b: this.spots[k].b } : {});
+        const { b, f } = this.spots[k];
+        const spot = this.pick(k, g, kept, { ...(b ? { b } : {}), ...(f ? { f } : {}) });
         if (this.crowding(k, spot, g, kept) < this.crowding(k, this.spots[k], g, kept)) { this.spots[k] = spot; moved = true; }
       }
       kept.push([k, this.spots[k]]);
@@ -513,6 +517,11 @@ export default class Pasture extends View {
     this.evening = phase === "evening";
     return div().id("pasture").size_full().relative().overflow_hidden().bg(this.night ? "#0d1633" : "#9ad6ff")
       .on_size_change((size, cx) => { this.size = size; cx.notify(); })
+      .on_mouse_move((e, cx) => this.dragTo(e, g, cx))
+      .on_mouse_up("left", (_e, cx) => this.drop(g, cx))
+      .on_mouse_up("right", (_e, cx) => this.drop(g, cx))
+      .on_hover((on, cx) => { if (!on) this.drop(g, cx); })
+      .when(!!this.drag, (el) => el.cursor_grabbing())
       .children([
         ...this.sky(g),
         ...this.land(g),
@@ -535,10 +544,10 @@ export default class Pasture extends View {
     const drinkers = [];
     const grown = list.filter((a) => !parentOf[a.address]).sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true }));
     for (const a of grown) {
-      const spot = this.spots[a.address] ?? { xf: 0.5, t: 0.5 };
+      const spot = this.spotOf(a.address) ?? { xf: 0.5, t: 0.5 };
       const h = hash(a.address);
       const st = statusOf(a);
-      let face = (h >>> 5) & 1 ? "r" : "l";
+      let face = !!((h >>> 5) & 1) !== !!spot.f ? "r" : "l"; // f: turned round with ⌃-click
       const y = g.feet(spot.t);
       const p = g.scale(spot.t) * sizeOf(a.address, spot);
       const sw = AW * p;
@@ -788,14 +797,83 @@ export default class Pasture extends View {
     // Clicks only on the body, not the picture's empty corners, so the animal behind
     // stays clickable where it shows.
     const hit = div().id(`ani-${a.address}`).absolute().left(3 * p).top(2 * p).w(30 * p).h(25 * p)
-      .cursor_pointer()
-      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-      .on_click((_e, cx) => { this.perform(a, breed, cx); this.go(a); })
+      .when(this.drag?.key === a.address, (el) => el.cursor_grabbing())
+      .when(this.drag?.key !== a.address, (el) => el.cursor_pointer())
+      // ⌃-click turns it round, ⇧⌃-drag moves it, a plain click plays a trick.
+      .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.press(a.address, e, cx); })
+      .on_mouse_down("right", (e, cx) => { if (e.modifiers.control) { cx.stop_propagation(); this.press(a.address, e, cx); } })
+      .on_click((_e, cx) => {
+        if (this.dropped === a.address) { this.dropped = null; return; }
+        if (_e.modifiers?.control || _e.modifiers?.platform) return;
+        this.perform(a, breed, cx); this.go(a);
+      })
       // Its name tag already says what a hover card would: hovering just rereads the question.
       .on_hover((on, cx) => { if (on) this.ask(a.address, cx, 20000); });
     return div().absolute().left(x).top(y - FEET * p).w(w).h(h)
       .opacity(entering ? 0 : 1).transition("opacity", { duration: 900, easing: "ease-out" })
       .children([...this.shadow(g, x, 18 * p, FEET * p, 26 * p, p), body, badge, hit]);
+  }
+
+  // ---- ⌃-click turns an animal round; ⇧⌃-drag moves an animal or a terminal object ----
+  // (⌘ works in place of ⌃; macOS can report ⌃-click as a right click, which counts too.)
+
+  // A spot, or where it is while being dragged.
+  spotOf(key) {
+    const s = this.spots[key];
+    const d = this.drag;
+    return s && d?.key === key && d.moved ? { ...s, xf: d.xf, t: d.t } : s;
+  }
+
+  press(key, e, cx) {
+    const m = e.modifiers ?? {};
+    if (!(m.control || m.platform) || this.demo || !this.spots[key]) return;
+    if (m.shift) {
+      const s = this.spots[key];
+      this.drag = { key, x0: e.position.x, y0: e.position.y, xf0: s.xf, t0: s.t, xf: s.xf, t: s.t, moved: false };
+    } else if (!key.startsWith("obj:")) {
+      this.flip = key;
+    }
+    cx.notify();
+  }
+
+  // Follows the pointer: sideways along the meadow, and up or down in depth, so it grows
+  // and shrinks as it goes nearer or farther. Window pixels are zoomed; ours aren't.
+  dragTo(e, g, cx) {
+    const d = this.drag;
+    if (!d) return;
+    const dx = (e.position.x - d.x0) / g.z, dy = (e.position.y - d.y0) / g.z;
+    if (!d.moved && Math.hypot(dx, dy) < 4) return;
+    d.moved = true;
+    d.t = g.depth(g.feet(d.t0) + dy);
+    d.xf = Math.min(0.98, Math.max(0.02, d.xf0 + dx / g.W));
+    cx.notify();
+  }
+
+  // Lets go: a ⌃-click turns the animal round; a drag keeps the new spot (on dry land,
+  // never in the creek). Both are saved with the spot and survive restarts.
+  drop(g, cx) {
+    const d = this.drag, f = this.flip;
+    this.drag = null; this.flip = null;
+    let key = null;
+    if (f && this.spots[f]) {
+      this.spots[f] = { ...this.spots[f], f: !this.spots[f].f };
+      key = f;
+    } else if (d?.moved && this.spots[d.key]) {
+      const obj = d.key.startsWith("obj:");
+      const spot = { ...this.spots[d.key], t: d.t };
+      const p = g.scale(d.t) * (obj ? OBJ_SIZE : sizeOf(d.key, spot)), sw = (obj ? OW : AW) * p, y = g.feet(d.t);
+      let x = Math.min(g.W - sw - 4, Math.max(4, d.xf * g.W - sw / 2));
+      x = obj ? this.dry(g, x - p, y, p * OW / AW) + p : this.dry(g, x, y, p);
+      spot.xf = (x + sw / 2) / g.W;
+      this.spots[d.key] = spot;
+      key = d.key;
+    }
+    if (key) {
+      localStorage.setItem("spots", JSON.stringify(this.spots));
+      this.dropped = key; // the release isn't a click
+      cx.timer.after(400, () => { if (this.dropped === key) this.dropped = null; });
+    }
+    if (d || f) cx.notify();
   }
 
   // A soft shadow on the ground, cast away from the sun (at 74% across the sky): short
@@ -1023,7 +1101,7 @@ export default class Pasture extends View {
       }
       if (state === "running" && fgRunning && interactive(fg)) state = "interactive";
       if (state === "running" || state === "interactive" || state === "success" || (state === "failed" && now - end < BURST)) ticking = true;
-      const spot = this.spots[key];
+      const spot = this.spotOf(key);
       const y = g.feet(spot.t);
       const p = g.scale(spot.t) * OBJ_SIZE;
       const w = OW * p;
@@ -1111,8 +1189,14 @@ export default class Pasture extends View {
     }
     return div().id(`obj-${t.address}`).absolute().left(x).top(y - OFEET * p).w(w).h(h)
       .cursor_pointer()
-      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-      .on_click((_e, cx) => this.openObj(o, cx))
+      .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.press(`obj:${t.address}`, e, cx); })
+      .on_mouse_down("right", (e, cx) => { if (e.modifiers.control) { cx.stop_propagation(); this.press(`obj:${t.address}`, e, cx); } })
+      .when(this.drag?.key === `obj:${t.address}`, (el) => el.cursor_grabbing())
+      .on_click((e, cx) => {
+        if (this.dropped === `obj:${t.address}`) { this.dropped = null; return; }
+        if (e.modifiers?.control || e.modifiers?.platform) return;
+        this.openObj(o, cx);
+      })
       .on_hover((on, cx) => {
         if (on) this.hoverObj = t.address;
         else if (this.hoverObj === t.address) this.hoverObj = null;

@@ -13,7 +13,7 @@ sit side by side across the full width (no sidebar), and a shell runs along the 
 |---|---|
 | ![NiuMa in the evening](previews/evening.png) | ![NiuMa at night](previews/night.png) |
 
-Click the sun to change the time of day. One new agent in ten or so arrives as a unicorn. In November and December, about one in five arrives as a Christmas moose.
+⌃-click an animal to turn it round, and ⇧⌃-drag an animal or terminal object to move it. Click the sun to change the time of day. One new agent in ten or so arrives as a unicorn. In November and December, about one in five arrives as a Christmas moose.
 
 See [RECIPE.md](RECIPE.md) for everything it shows and does, and how it's built.
 
@@ -72,8 +72,8 @@ know), and it may ask before adding the optional zsh hook.
   command into a shell panel, so the agent gets your `~/.zshrc` (e.g. env for Claude on
   Vertex or Bedrock); Herdr's own menus start agents without it. **Show the shell at the
   bottom** hides or shows the bottom shell (it keeps running while hidden).
-- **Updates.** The bar asks GitHub for the latest `VERSION` every 6 hours (switch it off
-  in ⚙) and shows an **Update** button next to ⚙ when there's a newer NiuMa. It and ⚙
+- **Updates.** The bar asks GitHub for the latest `VERSION` every 6 hours and
+  shows an **Update** button next to ⚙ when there's a newer NiuMa. It and ⚙
   show the installed and latest version and what changed (`CHANGELOG.md`); **Upgrade**
   does the manual install for you: downloads `main`, keeps your previous files in
   `~/.config/herdr-app/.niu-ma-backup/`, copies the layout and both mods over, adds new
@@ -82,6 +82,7 @@ know), and it may ask before adding the optional zsh hook.
   access: `raw.githubusercontent.com` and `codeload.github.com`.
 - **Sponsor.** ⚙ has buttons for [GitHub Sponsors](https://github.com/sponsors/limbov8) and
   [Buy Me a Coffee](https://buymeacoffee.com/limbov8).
+- **Feedback.** ⚙'s Feedback button opens a [new issue](https://github.com/limbov8/herdr-layout-niuma/issues/new).
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals
