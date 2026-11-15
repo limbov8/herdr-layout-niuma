@@ -25,6 +25,7 @@ const REPO = "limbov8/herdr-layout-niuma";
 const RAW = `https://raw.githubusercontent.com/${REPO}/refs/heads/main`;
 const TARBALL = `https://codeload.github.com/${REPO}/tar.gz/refs/heads/main`;
 const SPONSOR_URL = "https://github.com/sponsors/limbov8";
+const COFFEE_URL = "https://buymeacoffee.com/limbov8";
 const CHECK_HOURS = 6;
 const UPDATE_KEY = "niu-ma.update";
 
@@ -401,7 +402,6 @@ export default class Bar extends View {
     const overlay = props()?.overlay;
     return div().id("agents-dialog").size_full().flex().flex_col().gap(10).p(16).bg(t.popover)
       .child(div().id("agents-scroll").flex_1().min_h_0().overflow_y_scrollbar().flex().flex_col().gap(10).pr(4)
-        .child(this.renderVersion(t, cx, { sponsor: true }))
         .child(div().text_size(15).font_semibold().text_color(t.foreground).child("Agent start commands"))
         .child(div().text_size(11.5).text_color(t.muted)
           .child("What the agent buttons, ⌘⇧T and Herdr's menus run to start each agent. Saved as its run in programs.json."))
@@ -411,7 +411,8 @@ export default class Bar extends View {
         .child(this.toggle(t, "show-shell", "Show the shell at the bottom", this.showShell, (v) => { this.showShell = v; },
           "Off hides the bottom shell and its bar; the shell keeps running and comes back when you turn this on."))
         .child(this.toggle(t, "update-check", `Check for updates every ${CHECK_HOURS} hours`, this.autoCheck, (v) => { this.autoCheck = v; },
-          "Asks GitHub for the latest NiuMa version and shows an update icon next to ⚙ when there's a newer one. Nothing else is sent.")))
+          "Asks GitHub for the latest NiuMa version and shows an update icon next to ⚙ when there's a newer one. Nothing else is sent."))
+        .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
         .child(this.btn("agents-cancel", "Close", () => overlay && closeOverlay(overlay)))
@@ -518,7 +519,7 @@ export default class Bar extends View {
       .child(div().text_size(10.5).text_color(t.dim).child(label))
       .child(div().text_size(13).font_semibold().text_color(t.foreground).font_family("JetBrains Mono").child(value));
     const card = div().flex().flex_col().gap(10).p(12).rounded(8).bg(t.surface).border_1().border_color(newer ? t.accent : t.border)
-      .child(div().flex().flex_row().items_center().gap(14)
+      .child(div().flex().flex_row().items_center().gap(10)
         .child(div().text_size(15).child("🐄"))
         .child(fact("Installed", installed ?? "unknown"))
         .child(fact("Latest", latestText))
@@ -526,7 +527,8 @@ export default class Bar extends View {
         .child(div().flex_1())
         .child(this.btn("check-now", this.checkingNow ? "Checking…" : "Check now", (_e, cx) => this.checkNow(cx)))
         .when(sponsor, (el) => el.child(this.btn("sponsor", "Sponsor", () => openUrl(SPONSOR_URL),
-          { icon: "mods/niu-ma-bar/heart.svg", tint: true, tip: "Support NiuMa on GitHub Sponsors" }))))
+          { icon: "mods/niu-ma-bar/heart.svg", tint: true, tip: "Support NiuMa on GitHub Sponsors" }))
+          .child(this.btn("coffee", "☕ Coffee", () => openUrl(COFFEE_URL), { tip: "Buy me a coffee" }))))
       .when(!!u.error && !this.checkingNow, (el) => el.child(div().text_size(11).text_color(t.muted).truncate()
         .child(`Last check failed: ${u.error}`)));
     if (!newer && this.upgradeState !== "done") return card;
@@ -555,6 +557,8 @@ export default class Bar extends View {
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().id("sponsor-link").text_size(11.5).text_color(t.accent).cursor_pointer()
           .on_click(() => openUrl(SPONSOR_URL)).child("♥ Sponsor NiuMa"))
+        .child(div().id("coffee-link").text_size(11.5).text_color(t.accent).cursor_pointer()
+          .on_click(() => openUrl(COFFEE_URL)).child("☕ Buy me a coffee"))
         .child(div().flex_1())
         .child(this.btn("upgrade-close", "Close", () => overlay && closeOverlay(overlay))));
   }

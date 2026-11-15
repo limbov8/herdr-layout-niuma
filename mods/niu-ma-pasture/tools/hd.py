@@ -161,6 +161,8 @@ def horse_head_up(L, b, dy=0.0, happy=False):
          happy=happy, blush=(30.6, 7.6 + dy))
     if b.get("horn"):
         unicorn_horn(L, (29.4, 4.2 + dy), (31.6, 0.25 + dy))
+    if b.get("antlers"):
+        moose_up(L, dy)
 
 
 def horse_head_down(L, b, bite=True):
@@ -179,6 +181,8 @@ def horse_head_down(L, b, bite=True):
     face(L, eye=(30.3, 20.5), nose=(33.4, 25.6), mouth=((32.0, 26.4), (33.0, 26.6)))
     if b.get("horn"):
         unicorn_horn(L, (30.4, 18.6), (34.6, 17.4))
+    if b.get("antlers"):
+        moose_down(L)
     if bite:
         grass(L, 34.4)
 
@@ -193,6 +197,49 @@ def unicorn_horn(L, base, tip):
         L.strand([(x - w, y + w * 0.2), (x + w * 0.3, y - w * 0.9)], 0.11, 0.11, "Zs")
 
 
+def antler(L, base, palm, rx, ry, tines, lights):
+    """A moose's palmate antler: a short beam from the head to a broad palm with tines along
+    its top edge, hung with Christmas lights."""
+    L.strand([base, palm], 0.5, 0.6, "A")
+    L.ellipse(palm[0], palm[1], rx, ry, "A")
+    for tx, ty in tines:
+        L.strand([(tx, ty + 0.9), (tx, ty)], 0.42, 0.22, "A")
+    L.recolor(None, lambda x, y, k: "As" if k == "A" and y > palm[1] + ry * 0.35 else None)
+    for i, (lx, ly) in enumerate(lights):
+        L.ellipse(lx, ly, 0.42, 0.42, f"J{i % 4}")
+
+
+def scarf(L, band, tail, bell):
+    """A red knitted scarf round the neck (only on the neck), a green stripe, one end
+    hanging with a gold bell."""
+    on_neck = lambda x, y, k: k in ("B", "M", "Mh", "S")
+    L.strand(band, 1.05, 1.05, "C", where=on_neck)
+    L.strand(band, 0.25, 0.25, "V", where=lambda x, y, k: k == "C")
+    L.strand(tail, 0.75, 0.65, "C")
+    L.strand([tail[0], tail[-1]], 0.18, 0.18, "V", where=lambda x, y, k: k == "C")
+    L.ellipse(bell[0], bell[1], 0.62, 0.62, "Z")
+    L.ellipse(bell[0], bell[1] + 0.35, 0.2, 0.2, "Zs")
+
+
+def moose_up(L, dy=0.0):
+    # dewlap (the "bell" of skin under the jaw)
+    L.strand(shifted([(30.0, 9.8), (29.8, 11.6), (29.5, 12.4)], dy=dy), 0.55, 0.4, "M")
+    scarf(L, shifted([(22.6, 7.2), (25.4, 9.4), (27.4, 10.9)], dy=dy),
+          shifted([(24.0, 9.6), (23.4, 11.6), (23.6, 13.4)], dy=dy), (23.7, 14.0 + dy))
+    antler(L, (27.6, 3.4 + dy), (24.4, 1.9 + dy), 2.5, 1.15, shifted([(22.4, 0.9), (23.8, 0.6), (25.3, 0.6)], dy=dy),
+           shifted([(23.0, 2.2), (24.6, 1.4), (26.0, 2.4)], dy=dy))
+    antler(L, (29.2, 3.2 + dy), (31.4, 1.6 + dy), 1.9, 0.95, shifted([(31.0, 0.6), (32.6, 0.9)], dy=dy),
+           shifted([(30.8, 1.8), (32.4, 1.6)], dy=dy))
+
+
+def moose_down(L):
+    L.strand([(31.4, 23.2), (30.6, 24.6), (30.2, 25.4)], 0.55, 0.4, "M")
+    scarf(L, [(22.4, 16.2), (24.6, 14.2), (26.4, 12.8)], [(23.6, 15.4), (23.0, 17.6), (23.4, 19.4)], (23.5, 20.0))
+    antler(L, (27.6, 17.0), (25.0, 14.6), 2.4, 1.1, [(23.2, 13.6), (24.6, 13.3), (26.0, 13.4)],
+           [(23.6, 14.8), (25.2, 14.1), (26.4, 15.0)])
+    antler(L, (29.4, 16.8), (31.2, 14.6), 1.8, 0.95, [(30.8, 13.6), (32.3, 13.9)], [(30.6, 14.8), (32.0, 14.6)])
+
+
 RAINBOW = ["#ff9ecb", "#ffc49b", "#fff09a", "#a8f0c0", "#9fd8ff", "#c8a8ff"]
 
 
@@ -204,7 +251,12 @@ def rainbow(layer, b):
                                          else "Mw" if k == "Mh" else None))
 
 
-def horse_tail(L, swish):
+def horse_tail(L, swish, b=None):
+    if b and b.get("stubby"):
+        # A moose's short tail: a little flick under the rump.
+        tip = (6.0, 15.4) if swish else (6.8, 16.0)
+        L.strand([(7.9, 12.6), (6.9, 13.8), tip], 0.95, 0.6, "M")
+        return
     if swish:
         main = [(7.8, 12.4), (5.8, 13.8), (4.2, 16.0), (3.0, 18.8), (2.5, 21.6)]
         side = [(7.4, 12.9), (5.6, 15.2), (4.6, 18.2), (4.2, 20.4)]
@@ -225,7 +277,10 @@ def horse_sit(L, b):
     L.strand([(11.0, 24.2), (7.0, 25.0)], 0.85, 0.7, lambda x, y: "X" if b.get("socks") and x < 8.6 else "S")
     L.ellipse(6.3, 25.0, 0.9, 0.8, "H")
     L.ellipse(10.4, 21.6, 3.4, 3.1, "B")
-    L.strand([(8.0, 18.6), (6.2, 21.4), (4.6, 23.9), (2.6, 25.2), (0.9, 25.4)], 1.05, 0.6, "M")
+    if b.get("stubby"):
+        L.strand([(8.0, 18.6), (6.8, 20.0), (6.2, 21.4)], 0.95, 0.6, "M")
+    else:
+        L.strand([(8.0, 18.6), (6.2, 21.4), (4.6, 23.9), (2.6, 25.2), (0.9, 25.4)], 1.05, 0.6, "M")
     horse_head_up(L, b, dy=4.0, happy=True)
 
 
@@ -410,6 +465,11 @@ def palette(b, common):
     for i, c in enumerate(RAINBOW):
         p[f"M{i}"] = c
     p["Mw"] = "#ffffff"
+    # Christmas moose: antlers, scarf, lights.
+    p.setdefault("A", "#dcc79e"); p["As"] = mix(p["A"], "#000000", 0.22)
+    p.setdefault("C", "#d6283a"); p.setdefault("V", "#2f9e57")
+    for i, c in enumerate(["#ff4d5a", "#ffd84a", "#4fd27a", "#5fb8ff"]):
+        p[f"J{i}"] = c
     p["U"] = mix(p["U"], S, 0.35)
     F = b.get("face") or B
     Y = b.get("belly") or S
@@ -481,7 +541,7 @@ def breed(name, b, common, write):
 
     for tag, swish in (("a", False), ("b", True)):
         t = Layer()
-        (horse_tail if horse else cow_tail)(t, swish)
+        horse_tail(t, swish, b) if horse else cow_tail(t, swish)
         rainbow(t, b)
         outline(t)
         write(f"{name}-tail-{tag}", svg, t, pal)
