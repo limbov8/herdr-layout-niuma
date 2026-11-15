@@ -4,6 +4,10 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.2.1 — 2026-11-15
+
+- Animals near the front are smaller: 1.6× the size of the farthest ones instead of 2×.
+
 ## 1.2.0 — 2026-11-15
 
 - **Christmas moose.** In November and December about one new agent in five arrives as a
