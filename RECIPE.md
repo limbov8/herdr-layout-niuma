@@ -338,7 +338,8 @@ and/or `{ sky: "day" | "evening" | "night" }` to pin the sky):
 **`mods/niu-ma-bar/`** (`mod.json`: `{ "place": "none" }`; props `{}` for the bar over the
 panels, `{ role: "shell" }` for the shell's bar, `{ role: "agents" }` for the ⚙ dialog,
 which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agents" }, kind:
-"dialog", width: 600, height: 400 })`):
+"dialog", width: 600, height: 680 })`, `{ role: "upgrade" }` for the update window the
+**Update** button opens, 560 × 520):
 
 - `herdr` functions: `spaces`, `panes`, `focused`, `terminals`, `run`, `theme`, `props`,
   `layout`, `knownAgents`, `nextCommand`, `hc`, `exec`, `home`, `appHome`, `openOverlay`,
@@ -349,9 +350,14 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
   `tab.select`, `tab.new` (an empty tab), `pane.focus`, `terminal.kill`, `layout.set` (to
   put the shell block back).
 - Key commands (`nextCommand`): `split`, `split-agent`.
-- Programs: `herdr-app do pane.split|tab.new` and `hc send <t> <command>` (agents in a shell).
+- Programs: `herdr-app do pane.split|tab.new` and `hc send <t> <command>` (agents in a shell);
+  for updates `fetch` (falling back to `curl`) of `VERSION` and `CHANGELOG.md` on `main`,
+  and Upgrade's two `sh -c` scripts: `curl` the `main` tarball from codeload.github.com into
+  a temp folder, then back up, copy, `herdr-app check`; `open` / `xdg-open` for Sponsor.
 - Shared/stored: shared `niu-ma.agents` (bumped on Save), shared `niu-ma.agent-shell`
-  (`false` when the switch is off; absent means on), `localStorage` `defaults`
+  (`false` when the switch is off; absent means on), shared `niu-ma.update`
+  (`{current, latest, checked, error}`, the last check, every 6 h), shared
+  `niu-ma.update-check` (`false` turns the check off), `localStorage` `defaults`
   (each agent's default command).
 - Icons from Herdr's `workspace-chrome`: `git-branch.svg`, `plus.svg`, `settings.svg`,
   `terminal.svg`.
@@ -409,6 +415,13 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
   (a default install), `hc` on the shell's PATH, macOS key names (`cmd-…`) in `keys.json`.
 
 ## Done when
+
+- ⚙ shows the installed version (`mods/niu-ma-bar/VERSION`) and the latest (`VERSION` on
+  `main`, via raw.githubusercontent.com) with **Check now** and **Sponsor** (opens
+  github.com/sponsors/limbov8). With an older `mods/niu-ma-bar/VERSION`, the bar shows an
+  accent **Update** button next to ⚙ within 15 minutes of starting; it opens a window with
+  the newer `CHANGELOG.md` sections and **Upgrade**, which leaves the previous files in
+  `.niu-ma-backup/`, installs `main`, and the button goes away.
 
 - `herdr-app check` passes for `mods/niu-ma-pasture` and `mods/niu-ma-bar`.
 - `herdr-app do layout.switch '{"name":"niu-ma"}'` shows the pasture on top, the bar with
