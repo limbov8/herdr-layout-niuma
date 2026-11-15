@@ -56,8 +56,8 @@ the window. From back to front:
   `✓ Done N`, `• Working N`, `z Idle N`. A zero pill is dimmed.
 
 Depth: an object's feet sit between `horizon + 7%` (far, t = 0) and `bottom − 16px` (near,
-t = 1). An animal's art pixel is `(3 + 1.8t) × k` screen pixels (the nearest 1.6× the farthest), `k = height / 320` (0.55–1.8),
-so a near cow is about 173px wide at the default height and a far one about 108px.
+t = 1). An animal's art pixel is `(2 + 2.8t) × k` screen pixels (the nearest 2.4× the farthest), `k = height / 320` (0.55–1.8),
+so a near cow is about 173px wide at the default height and a far one about 72px.
 
 **Animals** (one per agent). 36 × 28 art units, drawn at 3 pixels per unit (108 × 84),
 facing left or right. Twenty-two breeds (the moose only in November and December), each with its own size; each animal also varies
