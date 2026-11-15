@@ -519,7 +519,7 @@ export default class Bar extends View {
       .child(div().text_size(10.5).text_color(t.dim).child(label))
       .child(div().text_size(13).font_semibold().text_color(t.foreground).font_family("JetBrains Mono").child(value));
     const card = div().flex().flex_col().gap(10).p(12).rounded(8).bg(t.surface).border_1().border_color(newer ? t.accent : t.border)
-      .child(div().flex().flex_row().items_center().gap(14)
+      .child(div().flex().flex_row().items_center().gap(10)
         .child(div().text_size(15).child("🐄"))
         .child(fact("Installed", installed ?? "unknown"))
         .child(fact("Latest", latestText))
