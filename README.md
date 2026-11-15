@@ -80,7 +80,8 @@ know), and it may ask before adding the optional zsh hook.
   `layout:niu-ma` keys without replacing yours, and runs `herdr-app check`. It assumes the
   default names (`niu-ma`, `niu-ma-pasture`, `niu-ma-bar`). This is the only network
   access: `raw.githubusercontent.com` and `codeload.github.com`.
-- **Sponsor.** ⚙ has a Sponsor button for [GitHub Sponsors](https://github.com/sponsors/limbov8).
+- **Sponsor.** ⚙ has buttons for [GitHub Sponsors](https://github.com/sponsors/limbov8) and
+  [Buy Me a Coffee](https://buymeacoffee.com/limbov8).
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.
 - Put `"props": { "demo": true }` on the pasture block to see made-up agents and terminals

@@ -25,6 +25,7 @@ const REPO = "limbov8/herdr-layout-niuma";
 const RAW = `https://raw.githubusercontent.com/${REPO}/refs/heads/main`;
 const TARBALL = `https://codeload.github.com/${REPO}/tar.gz/refs/heads/main`;
 const SPONSOR_URL = "https://github.com/sponsors/limbov8";
+const COFFEE_URL = "https://buymeacoffee.com/limbov8";
 const CHECK_HOURS = 6;
 const UPDATE_KEY = "niu-ma.update";
 
@@ -526,7 +527,8 @@ export default class Bar extends View {
         .child(div().flex_1())
         .child(this.btn("check-now", this.checkingNow ? "Checking…" : "Check now", (_e, cx) => this.checkNow(cx)))
         .when(sponsor, (el) => el.child(this.btn("sponsor", "Sponsor", () => openUrl(SPONSOR_URL),
-          { icon: "mods/niu-ma-bar/heart.svg", tint: true, tip: "Support NiuMa on GitHub Sponsors" }))))
+          { icon: "mods/niu-ma-bar/heart.svg", tint: true, tip: "Support NiuMa on GitHub Sponsors" }))
+          .child(this.btn("coffee", "☕ Coffee", () => openUrl(COFFEE_URL), { tip: "Buy me a coffee" }))))
       .when(!!u.error && !this.checkingNow, (el) => el.child(div().text_size(11).text_color(t.muted).truncate()
         .child(`Last check failed: ${u.error}`)));
     if (!newer && this.upgradeState !== "done") return card;
@@ -555,6 +557,8 @@ export default class Bar extends View {
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().id("sponsor-link").text_size(11.5).text_color(t.accent).cursor_pointer()
           .on_click(() => openUrl(SPONSOR_URL)).child("♥ Sponsor NiuMa"))
+        .child(div().id("coffee-link").text_size(11.5).text_color(t.accent).cursor_pointer()
+          .on_click(() => openUrl(COFFEE_URL)).child("☕ Buy me a coffee"))
         .child(div().flex_1())
         .child(this.btn("upgrade-close", "Close", () => overlay && closeOverlay(overlay))));
   }

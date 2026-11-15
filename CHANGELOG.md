@@ -10,7 +10,8 @@ both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latte
   moose with palmate antlers hung with twinkling lights, a red scarf with a gold bell and a
   red nose. It acts like a horse when clicked. Outside those months a moose shows as one
   of the regular breeds.
-- The version and Sponsor card moved to the bottom of the ⚙ dialog.
+- The version and Sponsor card moved to the bottom of the ⚙ dialog, with a Buy Me a Coffee
+  button next to Sponsor.
 
 ## 1.1.0 — 2026-11-14
 
