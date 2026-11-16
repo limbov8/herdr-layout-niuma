@@ -28,7 +28,7 @@
 // { sky: "day" | "evening" | "night" } pins the sky over the click choice.
 // Art: sprites/ (tools/sprites.py). Scenery is drawn natively with gradients and paths.
 import { View, div, image, PathBuilder, Background } from "gpui-kit";
-import { agents, terminals, spaces, panes, run, hc, settings, props, layout } from "herdr";
+import { agents, terminals, spaces, panes, run, hc, exec, appHome, settings, props, layout, shared } from "herdr";
 
 const DIR = "mods/niu-ma-pasture/sprites";
 const AW = 36, AH = 28, FEET = 27;
@@ -84,6 +84,9 @@ const CLOUDS = [
   { img: "cloud1", w: 40, h: 16, y: 0.11, s: 0.8, from: 0.95, to: 0.4, period: 170000, morph: 12000 },
 ];
 
+const usageOn = () => shared("niu-ma.usage") !== false;
+const fmtTok = (n) => (n < 1000 ? String(n) : n < 1e6 ? `${(n / 1e3).toFixed(n < 1e4 ? 1 : 0)}k` : `${(n / 1e6).toFixed(n < 1e7 ? 1 : 0)}M`);
+const fmtUsd = (v) => (v == null ? "?" : v < 0.995 ? `$${v.toFixed(2)}` : v < 99.5 ? `$${v.toFixed(1)}` : `$${Math.round(v)}`);
 function findNode(node, id) {
   if (!node || typeof node !== "object") return null;
   if (node.id === id) return node;
@@ -346,6 +349,11 @@ export default class Pasture extends View {
     this.flip = null; // ⌃-click on an animal: turn it round on release
     this.acts = {};
     this.hoverObj = null;
+    // Tokens and estimated cost per agent (tools/usage.py), once a minute while the
+    // settings' "Show tokens and cost" (shared "niu-ma.usage") is on.
+    this.usage = {};
+    cx.timer.after(1500, (cx) => this.readUsage(cx));
+    cx.timer.every(60000, (cx) => this.readUsage(cx));
     // Elapsed times tick and flashes end: redraw once a second only while one is showing.
     cx.timer.every(1000, (cx) => { if (this.ticking) cx.notify(); });
     this.skyMode = SKY_MODES.includes(localStorage.getItem("sky")) ? localStorage.getItem("sky") : "auto";
@@ -926,6 +934,33 @@ export default class Pasture extends View {
     else run("terminal.peek", { terminal: a.address });
   }
 
+  // Asks tools/usage.py for each local Claude Code or Codex agent's session totals, by
+  // the agent program's own process (the terminal's foreground).
+  readUsage(cx) {
+    if (this.demo || !usageOn() || this.usageBusy) return;
+    const byAddr = Object.fromEntries(terminals().map((t) => [t.address, t]));
+    const args = [];
+    for (const a of agents()) {
+      const t = byAddr[a.address];
+      const kind = a.app === "claude-code" ? "claude" : a.app === "codex" ? "codex" : null;
+      const fg = t?.foreground;
+      if (!kind || !fg?.pid || a.address.includes("/")) continue; // another machine: its files are there
+      args.push(`${a.address}:${kind}:${fg.pid}:${fg.cwd ?? t.cwd ?? ""}`);
+    }
+    if (!args.length) { this.usage = {}; return; }
+    this.usageBusy = true;
+    cx.spawn(async (cx) => {
+      try {
+        const r = await exec("python3", [`${appHome()}/mods/niu-ma-pasture/tools/usage.py`, ...args], { timeout: 20000 });
+        if (r.code === 0) this.usage = JSON.parse(r.stdout || "{}");
+      } catch (e) {
+        console.log(`niu-ma-pasture: usage: ${e}`);
+      }
+      this.usageBusy = false;
+      cx.notify();
+    });
+  }
+
   // The name tag over its head: the question's summary, then its space and tab. The red
   // "!" sign of an agent that needs you sits on top of it. Drawn after every animal, so a
   // nearer animal never hides a farther one's tag.
@@ -934,12 +969,15 @@ export default class Pasture extends View {
     const w = AW * p;
     const headTop = y - FEET * p + HEAD_TOP[poseOf(st)] * p;
     const fs = Math.min(13, Math.max(10.5, 2.1 * p + 1));
-    const tagH = fs * 2 + 10;
     const tw = Math.max(150, Math.min(260, w + 70));
     const left = Math.min(g.W - tw - 4, Math.max(4, x + w / 2 - tw / 2));
-    const top = Math.max(st === "blocked" ? 30 : 4, headTop - tagH - 4);
     const asked = this.asked[a.address]?.text;
     const title = asked ? summary(asked) : question(a);
+    // tokens this session (no cache reads) · estimated API $ today / whole session
+    const use = usageOn() ? this.usage[a.address] : null;
+    const useLine = use ? `${fmtTok(use.tok)} tok${use.today == null ? "" : ` · ${fmtUsd(use.today)} / ${fmtUsd(use.total)}`}` : null;
+    const tagH = fs * 2 + 10 + (useLine ? fs : 0);
+    const top = Math.max(st === "blocked" ? 30 : 4, headTop - tagH - 4);
     const els = [div().id(`tag-${a.address}`).absolute().left(left).top(top).w(tw).flex().justify_center()
       .opacity(entering ? 0 : 1).transition("opacity", { duration: 900, easing: "ease-out" })
       .child(div().id(`tagbox-${a.address}`).max_w(tw).px(7).py(3).rounded(7).bg("#10201ad9")
@@ -948,7 +986,9 @@ export default class Pasture extends View {
         .flex().flex_col().items_center()
         .child(div().max_w(tw - 14).truncate().text_size(fs).font_semibold().text_color("#ffffff").child(title))
         .child(div().max_w(tw - 14).truncate().text_size(fs - 1.5).text_color("#c9e8c4")
-          .child(`${a.space_name} · tab ${a.tab_name || a.tab_index + 1}${helpers ? ` · 🐇 ${helpers}` : ""}`)))];
+          .child(`${a.space_name} · tab ${a.tab_name || a.tab_index + 1}${helpers ? ` · 🐇 ${helpers}` : ""}`))
+        .when(!!useLine, (el) => el.child(div().max_w(tw - 14).truncate().text_size(fs - 2).text_color("#ffe9a8")
+          .child(useLine))))];
     if (st === "blocked") {
       const s = Math.min(30, Math.max(18, 4.2 * p));
       els.push(div().absolute().left(left + tw / 2 - s / 2).w(s).h(s).rounded(s * 0.28).bg("#e5484d")

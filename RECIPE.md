@@ -415,6 +415,12 @@ which the bar opens with `openOverlay({ mod: "niu-ma-bar", props: { role: "agent
 
 ## Done when
 
+- With **Show tokens and cost** on, a Claude Code agent that has answered once gets a
+  third, pale-yellow line on its name tag, `<tokens> tok · $<today> / $<session>`, that
+  matches `python3 mods/niu-ma-pasture/tools/usage.py t1:claude:<pid>:<cwd>` for its
+  foreground pid; a Codex agent shows `<tokens> tok` only; turning the switch off and
+  saving removes the line.
+
 - Ctrl-clicking (or ⌘-clicking) an animal turns it to face the other way, with no trick;
   Shift+Ctrl-dragging an animal or a fire pit, pot or crystal moves it with the pointer,
   growing as it comes nearer and shrinking as it goes farther; dropping it in the creek

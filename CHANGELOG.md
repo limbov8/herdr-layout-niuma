@@ -4,6 +4,15 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.4.0 — 2026-11-16
+
+- **Tokens and cost.** Each Claude Code and Codex agent's name tag gets a line like
+  `1.2M tok · $3.4 / $8.0`: tokens this session (not counting cache reads), then the
+  estimated API cost today / for the whole session, at Anthropic's list prices. On a
+  subscription it's what the work would have cost on the API. Codex shows tokens only.
+  Read once a minute from the agents' own session files; **Show tokens and cost** in ⚙
+  turns it off.
+
 ## 1.3.1 — 2026-11-15
 
 - The bottom shell's fire pit (or pot, or crystal) now leaves the pasture when the bottom

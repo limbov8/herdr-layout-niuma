@@ -82,6 +82,11 @@ know), and it may ask before adding the optional zsh hook.
   access: `raw.githubusercontent.com` and `codeload.github.com`.
 - **Sponsor.** ⚙ has buttons for [GitHub Sponsors](https://github.com/sponsors/limbov8) and
   [Buy Me a Coffee](https://buymeacoffee.com/limbov8).
+- **Tokens and cost.** Claude Code and Codex agents' name tags show `1.2M tok · $3.4 / $8.0`
+  (tokens this session without cache reads · estimated API $ today / whole session). It
+  reads `~/.claude/sessions`, `~/.claude/projects` and `~/.codex/sessions` locally with
+  `python3` (`mods/niu-ma-pasture/tools/usage.py`), once a minute; nothing leaves the
+  machine. Turn it off with **Show tokens and cost** in ⚙.
 - **Feedback.** ⚙'s Feedback button opens a [new issue](https://github.com/limbov8/herdr-layout-niuma/issues/new).
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.

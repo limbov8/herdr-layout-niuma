@@ -327,6 +327,7 @@ export default class Bar extends View {
     this.rows = AGENT_KEYS.map((a) => ({ ...a, input: InputState.new({ placeholder: a.key }), def: null, installed: null }));
     this.status = "Loading…";
     this.inShell = shared("niu-ma.agent-shell") !== false;
+    this.showUsage = shared("niu-ma.usage") !== false;
     this.showShell = !!findNode(layout(), "shell") && !findNode(layout(), "shell").hidden;
     cx.spawn(async (cx) => {
       try {
@@ -370,6 +371,7 @@ export default class Bar extends View {
       if (!Object.keys(file.programs).length) delete file.programs;
       await writeTextFile(this.path, `${JSON.stringify(file, null, 2)}\n`, current);
       setShared("niu-ma.agent-shell", this.inShell);
+      setShared("niu-ma.usage", this.showUsage);
       // The bottom shell: hidden, not removed, so it keeps running and comes back as it was.
       if (findNode(layout(), "shell")) run(this.showShell ? "layout.show" : "layout.hide", { id: "shell" });
       setShared("niu-ma.agents", Date.now());
@@ -409,6 +411,8 @@ export default class Bar extends View {
           "The agent buttons and ⌘⇧T open a shell panel and type the command, so it gets your ~/.zshrc (env for Vertex, Bedrock, proxies). Off: Herdr starts it directly, without ~/.zshrc."))
         .child(this.toggle(t, "show-shell", "Show the shell at the bottom", this.showShell, (v) => { this.showShell = v; },
           "Off hides the bottom shell and its bar; the shell keeps running and comes back when you turn this on."))
+        .child(this.toggle(t, "show-usage", "Show tokens and cost", this.showUsage, (v) => { this.showUsage = v; },
+          "Adds a line to each Claude Code and Codex agent's name tag: tokens this session (not counting cache reads), then the estimated API cost today / for the whole session, e.g. 1.2M tok · $3.4 / $8.0. Cost is at API list prices, so on a subscription it's what it would have cost; Codex shows tokens only."))
         .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
