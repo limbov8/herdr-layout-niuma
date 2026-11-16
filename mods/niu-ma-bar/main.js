@@ -13,7 +13,7 @@
 import { View, div, image, svg } from "gpui-kit";
 import { InputState, Input, TextView } from "gpui-base";
 import { spaces, panes, focused, terminals, run, exec, theme, props, layout, knownAgents, nextCommand, hc, home, appHome,
-  openOverlay, closeOverlay, readTextFile, writeTextFile, shared, setShared, notify, window as appWindow } from "herdr";
+  openOverlay, closeOverlay, readTextFile, writeTextFile, shared, setShared, notify, machines, window as appWindow } from "herdr";
 
 const SHELL_NAME = "niu-ma-shell";
 
@@ -189,6 +189,8 @@ export default class Bar extends View {
     this.shell = props()?.role === "shell";
     this.agentsDialog = props()?.role === "agents";
     this.upgradeWindow = props()?.role === "upgrade";
+    this.spaceMenu = props()?.role === "new-space";
+    if (this.spaceMenu) return;
     if (this.agentsDialog || this.upgradeWindow) this.initVersion(cx);
     if (this.agentsDialog) return this.initAgents(cx);
     if (this.upgradeWindow) return;
@@ -316,6 +318,7 @@ export default class Bar extends View {
   render(cx) {
     if (this.agentsDialog) return this.renderAgents(cx);
     if (this.upgradeWindow) return this.renderUpgradeWindow(cx);
+    if (this.spaceMenu) return this.renderSpaceMenu();
     if (!this.shell && (shared("niu-ma.agents") ?? null) !== this.agentsStamp) this.loadAgents(cx);
     return this.shell ? this.renderShell() : this.renderMain();
   }
@@ -570,6 +573,35 @@ export default class Bar extends View {
         .child(this.btn("upgrade-close", "Close", () => overlay && closeOverlay(overlay))));
   }
 
+  // ---- + : which machine the new space goes on ---------------------------------
+  // This computer first, then every machine Herdr knows (`hc machine ls`; an agent's
+  // short-lived --temp machines aren't listed), then Add machine.
+
+  renderSpaceMenu() {
+    const t = theme();
+    const overlay = props()?.overlay;
+    const close = () => overlay && closeOverlay(overlay);
+    const here = spaces().find((s) => s.active)?.machine ?? null;
+    const row = (id, label, sub, on, onClick, opts = {}) => div().id(id).h(30).px(10).rounded(6).flex().flex_row().items_center().gap(8)
+      .text_size(12.5).text_color(opts.off ? t.dim : t.foreground).cursor_pointer().hover((s) => s.bg(t.hover))
+      .on_click(() => { close(); onClick(); })
+      .child(svg(opts.icon ?? "mods/workspace-chrome/server.svg").size(14).text_color(opts.off ? t.dim : t.muted))
+      .child(div().flex_1().truncate().child(label))
+      .when(!!sub, (el) => el.child(div().text_size(10.5).text_color(t.dim).child(sub)))
+      .when(on, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(12).text_color(t.accent)));
+    const others = machines().filter((m) => m.name);
+    return div().id("space-menu").size_full().flex().flex_col().gap(2).p(6).bg(t.popover)
+      .child(div().px(10).pt(2).pb(4).text_size(11).text_color(t.dim).child("New space on"))
+      .child(row("space-on-here", "This computer", null, here === null, () => run("space.new", { machine: "" }),
+        { icon: "mods/workspace-chrome/monitor.svg" }))
+      .children(others.map((m) => row(`space-on-${m.name}`, m.name,
+        m.layout === "unavailable" ? "offline" : m.layout === "loading" ? "connecting" : null, here === m.name,
+        () => run("space.new", { machine: m.name }), { off: m.layout === "unavailable" })))
+      .child(div().h(1).my(2).bg(t.border))
+      .child(row("space-add-machine", "Add machine…", null, false, () => run("mod.open", { name: "machine-add" }),
+        { icon: "mods/workspace-chrome/plus.svg" }));
+  }
+
   renderMain() {
     const t = theme();
     const f = focused();
@@ -601,8 +633,9 @@ export default class Bar extends View {
       .child(div().flex_none().text_size(15).child(here.length > 1 ? "🐎" : "🐄"))
       .child(div().flex().flex_row().items_center().gap(3).min_w(0).flex_shrink(1).overflow_hidden().children(all.map(spacePill)))
       .child(div().id("space-new").flex_none().size(24).rounded(7).flex().items_center().justify_center()
-        .hover((s) => s.bg(t.hover)).cursor_pointer().tooltip("New space (⌘N)")
-        .on_click(() => run("space.new"))
+        .hover((s) => s.bg(t.hover)).cursor_pointer().tooltip("New space on… (⌘N: on this space's machine)")
+        .on_click(() => openOverlay({ mod: "niu-ma-bar", props: { role: "new-space" }, kind: "popup", at: "pointer", width: 240,
+          height: 92 + 34 * machines().filter((m) => m.name).length }))
         .child(svg("mods/workspace-chrome/plus.svg").size(13).text_color(t.muted)))
       .child(div().flex_none().w(1).h(18).bg(t.border))
       .when(!!space?.branch, (el) => el.child(div().flex_none().flex().flex_row().items_center().gap(3).text_size(11).text_color(t.dim)

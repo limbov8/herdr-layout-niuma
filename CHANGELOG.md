@@ -12,6 +12,9 @@ both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latte
   subscription it's what the work would have cost on the API. Codex shows tokens only.
   Read once a minute from the agents' own session files; **Show tokens and cost** in ⚙
   turns it off.
+- **Pick the machine for a new space.** The bar's **+** opens a small menu: This computer,
+  every machine Herdr knows (offline ones dimmed), and Add machine…. ⌘N still makes one on
+  the current space's machine.
 
 ## 1.3.1 — 2026-11-15
 

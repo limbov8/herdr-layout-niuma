@@ -60,6 +60,8 @@ know), and it may ask before adding the optional zsh hook.
 
 ## Good to know
 
+- The bar's **+** asks which machine a new space goes on (this computer or one from
+  `hc machine ls`, or Add machine…); ⌘N makes one on the current space's machine.
 - There's no sidebar: switch spaces with the bar's pills; rename, reorder and worktrees are
   in the command palette (`⌘⇧P`). Herdr's `⌘B` (toggle sidebar) does nothing useful here.
 - It runs `hc` locally: `hc read` on agents' screens (questions and Claude Code
