@@ -131,8 +131,9 @@ async function mergeKeys(src) {
   for (const [section, keys] of Object.entries(theirs)) {
     if (!section.startsWith("layout:niu-ma")) continue;
     mine[section] = mine[section] ?? {};
+    const bound = new Set(Object.values(mine[section]));
     for (const [key, action] of Object.entries(keys)) {
-      if (!(key in mine[section])) { mine[section][key] = action; added++; }
+      if (!(key in mine[section]) && !bound.has(action)) { mine[section][key] = action; added++; }
     }
   }
   if (added) await writeTextFile(path, `${JSON.stringify(mine, null, 2)}\n`, current);
@@ -160,6 +161,31 @@ function findNode(node, id) {
   }
   return null;
 }
+// NiuMa's own shortcuts (keys.json, section `layout:niu-ma`), editable in ⚙. A row with
+// `digits` binds <modifier>-1 … <modifier>-9 to its action with that number.
+const KEY_SECTION = "layout:niu-ma";
+const SHORTCUTS = [
+  { id: "space-n", label: "Switch to space 1–9", digits: (n) => `space.select:${n}`, def: "cmd" },
+  { id: "space-prev", label: "Previous space", action: "space.prev", def: "cmd-shift-[" },
+  { id: "space-next", label: "Next space", action: "space.next", def: "cmd-shift-]" },
+  { id: "new-space", label: "New space", action: "space.new", def: "cmd-n" },
+  { id: "split", label: "New panel", action: "niu-ma-bar.split", def: "cmd-t" },
+  { id: "split-agent", label: "New agent panel", action: "niu-ma-bar.split-agent", def: "cmd-shift-t" },
+  { id: "close", label: "Close panel", action: "pane.close", def: "cmd-w" },
+];
+const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+// What a row is bound to now: a key ("cmd-shift-["), a modifier ("cmd") for digit rows, or "".
+function boundKey(section, sc) {
+  const keys = Object.entries(section ?? {});
+  if (sc.digits) {
+    const k = keys.find(([key, act]) => act === sc.digits(1) && /-1$/.test(key))?.[0];
+    return k ? k.slice(0, -2) : "";
+  }
+  return keys.find(([, act]) => act === sc.action)?.[0] ?? "";
+}
+const actionsOf = (sc) => (sc.digits ? DIGITS.map(sc.digits) : [sc.action]);
+const normKey = (k) => k.trim().toLowerCase().replace(/\s*\+\s*/g, "-").replace(/\s+/g, "-");
+
 // The agents the ⚙ dialog sets up, by programs.json key.
 const AGENT_KEYS = [{ key: "claude", name: "Claude Code" }, { key: "codex", name: "Codex" }];
 // A command line to argv and back, with "…" and '…' quoting.
@@ -202,6 +228,12 @@ export default class Bar extends View {
       return;
     }
     this.loadAgents(cx);
+    // Machines that need a login (`hc machine ls`: state needs_login, e.g. after the host was
+    // down): open `hc machine login <name>` in a tab of its own so only the password or code
+    // is left to type. Checked every 30 s while ⚙'s switch (shared "niu-ma.auto-login") is on.
+    this.logins = {};
+    cx.timer.after(4000, (cx) => this.watchMachines(cx));
+    cx.timer.every(30000, (cx) => this.watchMachines(cx));
     // The update check: due every CHECK_HOURS (or when the installed version changed, after
     // an upgrade), looked at every 15 minutes so a sleeping laptop catches up on waking.
     const due = (cx) => {
@@ -237,6 +269,46 @@ export default class Bar extends View {
       } catch {
         this.agents = [];
       }
+      cx.notify();
+    });
+  }
+
+  watchMachines(cx) {
+    if (shared("niu-ma.auto-login") === false || this.machineBusy) return;
+    this.machineBusy = true;
+    cx.spawn(async (cx) => {
+      try {
+        const r = await hc(["machine", "ls", "--json"]);
+        const list = r.code === 0 ? (JSON.parse(r.stdout || "{}").machines ?? []).filter((m) => !m.temporary) : [];
+        const live = new Set(terminals().filter((t) => t.state === "live").map((t) => t.address));
+        for (const m of list) {
+          const login = this.logins[m.name];
+          const open = login && live.has(login.addr);
+          // Done (or closed): go back to where you were.
+          if (login && !open && login.back) { run("tab.select", { id: login.back }); login.back = null; }
+          if (m.state !== "needs_login") { if (!open) delete this.logins[m.name]; continue; }
+          if (open || (login && Date.now() < login.next)) continue;
+          // A tab in a space on this computer (labels make Herdr show it); a login runs here.
+          const space = spaces().find((sp) => !sp.machine && sp.active) ?? spaces().find((sp) => !sp.machine);
+          const tab = `niu-ma-login-${m.name}-${Date.now()}`;
+          const out = await hc(["run", "--json", "--bg", "--keep", "--name", `niu-ma-login-${m.name}`,
+            "--label", `herdr.space=${space?.id?.split("/").pop() ?? "niu-ma-login"}`, "--label", `herdr.tab=${tab}`,
+            "--", "hc", "machine", "login", m.name]).catch(() => null);
+          let addr = null;
+          try { addr = JSON.parse(out?.stdout || "{}").address ?? null; } catch {}
+          if (!addr) continue;
+          const tries = (login?.tries ?? 0) + 1;
+          const back = focused()?.tab ?? null;
+          // Closed without logging in: ask again after 2, 4, 8, 16, then every 30 minutes.
+          this.logins[m.name] = { addr, tries, back, next: Date.now() + Math.min(30, 2 ** tries) * 60e3 };
+          cx.timer.after(700, () => { run("tab.rename", { id: tab, name: `Log in to ${m.name}` }); run("tab.select", { id: tab }); });
+          notify({ title: `${m.name} needs a login`, body: "Type its password or code in the Log in tab; it closes when you're in.",
+            level: "warning", timeout: 8000, action: { name: "tab.select", args: { id: tab } } });
+        }
+      } catch (e) {
+        console.log(`niu-ma-bar: machine check: ${e}`);
+      }
+      this.machineBusy = false;
       cx.notify();
     });
   }
@@ -331,6 +403,17 @@ export default class Bar extends View {
     this.status = "Loading…";
     this.inShell = shared("niu-ma.agent-shell") !== false;
     this.showUsage = shared("niu-ma.usage") !== false;
+    this.autoLogin = shared("niu-ma.auto-login") !== false;
+    this.keyRows = SHORTCUTS.map((sc) => ({ sc, input: InputState.new({ placeholder: sc.digits ? "modifier, e.g. cmd" : "e.g. cmd-shift-[" }) }));
+    cx.spawn(async (cx) => {
+      try {
+        const keys = JSON.parse((await readTextFile(`${appHome()}/keys.json`)) ?? "{}");
+        for (const r of this.keyRows) r.input.set_value(boundKey(keys[KEY_SECTION], r.sc));
+      } catch (e) {
+        this.status = `Couldn't read keys.json: ${e}`;
+      }
+      cx.notify();
+    });
     this.showShell = !!findNode(layout(), "shell") && !findNode(layout(), "shell").hidden;
     cx.spawn(async (cx) => {
       try {
@@ -357,6 +440,31 @@ export default class Bar extends View {
     });
   }
 
+  // Rewrites this layout's section of keys.json: each row's old bindings go, its new key
+  // (or keys, for 1–9) comes in. An empty field leaves the action unbound.
+  async saveKeys() {
+    const path = `${appHome()}/keys.json`;
+    const current = await readTextFile(path);
+    const file = current ? JSON.parse(current) : {};
+    const section = { ...(file[KEY_SECTION] ?? {}) };
+    const mine = new Set(SHORTCUTS.flatMap(actionsOf));
+    for (const [k, act] of Object.entries(section)) if (mine.has(act)) delete section[k];
+    const taken = {};
+    for (const r of this.keyRows) {
+      const key = normKey(r.input.value());
+      if (!key) continue;
+      const pairs = r.sc.digits ? DIGITS.map((n) => [`${key}-${n}`, r.sc.digits(n)]) : [[key, r.sc.action]];
+      for (const [k, act] of pairs) {
+        if (taken[k]) throw new Error(`${k} is used twice (${taken[k]} and ${r.sc.label})`);
+        taken[k] = r.sc.label;
+        section[k] = act;
+      }
+    }
+    file[KEY_SECTION] = section;
+    const text = `${JSON.stringify(file, null, 2)}\n`;
+    if (text !== current) await writeTextFile(path, text, current);
+  }
+
   async saveAgents(cx) {
     try {
       const current = await readTextFile(this.path);
@@ -375,6 +483,8 @@ export default class Bar extends View {
       await writeTextFile(this.path, `${JSON.stringify(file, null, 2)}\n`, current);
       setShared("niu-ma.agent-shell", this.inShell);
       setShared("niu-ma.usage", this.showUsage);
+      setShared("niu-ma.auto-login", this.autoLogin);
+      await this.saveKeys();
       // The bottom shell: hidden, not removed, so it keeps running and comes back as it was.
       if (findNode(layout(), "shell")) run(this.showShell ? "layout.show" : "layout.hide", { id: "shell" });
       setShared("niu-ma.agents", Date.now());
@@ -416,6 +526,9 @@ export default class Bar extends View {
           "Off hides the bottom shell and its bar; the shell keeps running and comes back when you turn this on."))
         .child(this.toggle(t, "show-usage", "Show tokens and cost", this.showUsage, (v) => { this.showUsage = v; },
           "Adds a line to each Claude Code and Codex agent's name tag: tokens this session (not counting cache reads), then the estimated API cost today / for the whole session, e.g. 1.2M tok · $3.4 / $8.0. Cost is at API list prices, so on a subscription it's what it would have cost; Codex shows tokens only."))
+        .child(this.toggle(t, "auto-login", "Reconnect machines that need a login", this.autoLogin, (v) => { this.autoLogin = v; },
+          "When a machine says it needs a login (after it was down or restarted), NiuMa opens hc machine login <name> in a small terminal so you only type the password or code. It closes when you're in."))
+        .child(this.renderShortcuts(t))
         .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
         .child(div().flex_1().text_size(11).text_color(this.status.startsWith("Not") || this.status.startsWith("Couldn't") ? t.blocked : t.muted).truncate().child(this.status))
@@ -425,6 +538,23 @@ export default class Bar extends View {
           this.saving = true; cx.notify();
           cx.spawn(async (cx) => { await this.saveAgents(cx); this.saving = false; cx.notify(); });
         }, { primary: true })));
+  }
+
+  // Shortcuts: one field per action, in Herdr's key format (cmd-shift-[); the 1–9 row
+  // takes only the modifier. Saved with the rest, into keys.json's layout:niu-ma section.
+  renderShortcuts(t) {
+    const row = (r) => div().flex().flex_row().items_center().gap(10)
+      .child(div().w(170).flex_none().text_size(12.5).text_color(t.foreground).child(r.sc.label))
+      .child(Input.new(r.input).flex_1().h(28).px(8).rounded(6).border_1().border_color(t.input).bg(t.background)
+        .text_size(12).text_color(t.foreground).font_family("JetBrains Mono"))
+      .when(!!r.sc.digits, (el) => el.child(div().flex_none().text_size(11.5).text_color(t.dim).child("-1 … -9")))
+      .child(div().id(`key-reset-${r.sc.id}`).flex_none().text_size(11).text_color(t.accent).cursor_pointer()
+        .on_click((_e, cx) => { r.input.set_value(r.sc.def); cx.notify(); }).child("Default"));
+    return div().flex().flex_col().gap(8).p(12).rounded(8).bg(t.surface).border_1().border_color(t.border)
+      .child(div().text_size(13).font_semibold().text_color(t.foreground).child("Shortcuts"))
+      .child(div().text_size(11).text_color(t.muted)
+        .child("Only in the NiuMa layout. Write keys like cmd-shift-[ or ctrl-alt-n; leave a field empty to turn that shortcut off. Saved to keys.json."))
+      .children((this.keyRows ?? []).map(row));
   }
 
   // A switch card in the ⚙ dialog. "Start agents in a shell": whether the bar starts
