@@ -43,7 +43,8 @@ know), and it may ask before adding the optional zsh hook.
 
 2. Merge `keys.json`'s `layout:niu-ma` section into your `~/.config/herdr-app/keys.json`
    (`⌘T` adds a side-by-side panel, `⌘⇧T` one with your first installed agent, `⌘W`
-   closes just the focused panel, `⌘N` makes a new space; only in this layout).
+   closes just the focused panel, `⌘N` makes a new space, `⌘1`–`⌘9` switch space,
+   `⇧⌘[` / `⇧⌘]` previous / next space; only in this layout, and changeable in ⚙).
 
 3. Optional, for exit codes on terminal objects (zsh): add to `~/.zshrc`
 
@@ -89,6 +90,8 @@ know), and it may ask before adding the optional zsh hook.
   reads `~/.claude/sessions`, `~/.claude/projects` and `~/.codex/sessions` locally with
   `python3` (`mods/niu-ma-pasture/tools/usage.py`), once a minute; nothing leaves the
   machine. Turn it off with **Show tokens and cost** in ⚙.
+- **Machines that need a login** (after the host was down) get `hc machine login <name>`
+  opened for you in a Log in tab, so you only type the password or code. Switch: ⚙.
 - **Feedback.** ⚙'s Feedback button opens a [new issue](https://github.com/limbov8/herdr-layout-niuma/issues/new).
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.

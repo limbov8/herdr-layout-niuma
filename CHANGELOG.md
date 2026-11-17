@@ -4,6 +4,20 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.5.0 — 2026-11-17
+
+- **Space shortcuts.** ⌘1–⌘9 switch to space 1–9 and ⇧⌘[ / ⇧⌘] go to the previous / next
+  space (in the NiuMa layout; Herdr's tab shortcuts on those keys still work elsewhere).
+- **Shortcuts in ⚙.** A Shortcuts card lists every NiuMa key (spaces, new space, new panel,
+  new agent panel, close panel) with a field to change it, Default, or empty to turn it off.
+  Saved to keys.json's `layout:niu-ma` section; Upgrade no longer re-adds a key for an
+  action you've rebound.
+- **Reconnect machines.** When a machine says it needs a login (after it was down or
+  restarted), NiuMa opens `hc machine login <name>` in a Log in tab on this computer and
+  switches to it, so you only type the password or code; the tab closes once you're in and
+  you're taken back. Closed without logging in, it asks again after 2, 4, 8, 16, then every
+  30 minutes. A switch in ⚙ turns it off.
+
 ## 1.4.0 — 2026-11-16
 
 - **Tokens and cost.** Each Claude Code and Codex agent's name tag gets a line like
