@@ -12,6 +12,11 @@ both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latte
   see nothing else. Only when it asks for a password, a code or a host key does it become a
   "Log in to <name>" tab. If it fails (the host is still down), it tries again after 1, 2,
   4, 8, 16, then every 30 minutes.
+- **Upgrade keeps your settings.** NiuMa's layout file also holds what you changed in it: a
+  hidden bottom shell, the pasture's and shell's heights, the theme you picked, the bottom
+  shell's terminal, props like `demo` or `sky`. Upgrade used to replace it all; now it
+  carries those over into the new file. If an earlier Upgrade already reset them, the
+  first start of the new version puts them back from the upgrade's backup.
 
 ## 1.5.0 — 2026-11-17
 

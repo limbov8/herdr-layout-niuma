@@ -80,7 +80,8 @@ know), and it may ask before adding the optional zsh hook.
   show the installed and latest version and what changed (`CHANGELOG.md`); **Upgrade**
   does the manual install for you: downloads `main`, keeps your previous files in
   `~/.config/herdr-app/.niu-ma-backup/`, copies the layout and both mods over, adds new
-  `layout:niu-ma` keys without replacing yours, and runs `herdr-app check`. It assumes the
+  `layout:niu-ma` keys without replacing yours, keeps your layout settings (hidden shell,
+  sizes, theme), and runs `herdr-app check`. It assumes the
   default names (`niu-ma`, `niu-ma-pasture`, `niu-ma-bar`). This is the only network
   access: `raw.githubusercontent.com` and `codeload.github.com`.
 - **Sponsor.** ⚙ has buttons for [GitHub Sponsors](https://github.com/sponsors/limbov8) and

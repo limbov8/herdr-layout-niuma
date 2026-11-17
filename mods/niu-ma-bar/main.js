@@ -140,15 +140,63 @@ async function mergeKeys(src) {
   return added;
 }
 
+// NiuMa is a personal layout, so Herdr keeps its clicks in the file itself: a hidden
+// bottom shell, the pasture's and shell's heights, the theme picked for it, the bottom
+// shell's terminal, props added to a block (demo, sky). An upgrade brings a new file; this
+// carries those over from the old one, node by node (by id).
+const LOOK_KEYS = ["theme", "colors", "font", "font_size", "ui_font", "terminal_padding", "terminal_opacity", "background"];
+function keepLayout(old, next) {
+  if (!old || typeof old !== "object" || !next || typeof next !== "object") return next;
+  const byId = {};
+  const index = (n) => { if (n?.id) byId[n.id] = n; (n?.children ?? []).forEach(index); };
+  index(old);
+  for (const k of LOOK_KEYS) if (k in old) next[k] = old[k];
+  const walk = (n) => {
+    const o = n.id ? byId[n.id] : null;
+    if (o) {
+      if ("hidden" in o) n.hidden = o.hidden; else delete n.hidden;
+      if (o.size) n.size = o.size;
+      if (o.content?.props && n.content) n.content.props = { ...(n.content.props ?? {}), ...o.content.props };
+      if (o.content?.terminal && n.content && !n.content.mod) n.content.terminal = o.content.terminal;
+      // Children only the old file has: a terminal block like the bottom shell's.
+      const have = new Set((n.children ?? []).map((c) => c.id));
+      for (const c of o.children ?? []) {
+        if (c.id && !have.has(c.id) && c.content?.terminal && !byIdNew[c.id]) n.children = [...(n.children ?? []), c];
+      }
+    }
+    (n.children ?? []).forEach(walk);
+  };
+  const byIdNew = {};
+  const indexNew = (n) => { if (n?.id) byIdNew[n.id] = n; (n?.children ?? []).forEach(indexNew); };
+  indexNew(next);
+  walk(next);
+  return next;
+}
+
+// Rewrites the installed layout with `old`'s settings kept. Returns whether it changed.
+async function keepLayoutFile(old) {
+  const path = `${appHome()}/layouts/niu-ma.json`;
+  const current = await readTextFile(path);
+  if (!current || !old) return false;
+  const merged = `${JSON.stringify(keepLayout(old, JSON.parse(current)), null, 2)}\n`;
+  if (merged === current) return false;
+  await writeTextFile(path, merged, current);
+  return true;
+}
+
 async function upgrade() {
   const dl = await exec("sh", ["-c", DOWNLOAD_SH, "sh", TARBALL], { timeout: 240000 });
   if (dl.code !== 0) throw new Error(`Download failed: ${(dl.stderr || dl.stdout).trim()}`);
   const [tmp, src] = dl.stdout.trim().split("\n");
   const version = ((await readTextFile(`${src}/VERSION`)) ?? "").trim();
+  let oldLayout = null;
+  try { oldLayout = JSON.parse((await readTextFile(`${appHome()}/layouts/niu-ma.json`)) ?? "null"); } catch {}
   let added = 0, keysNote = "";
   try { added = await mergeKeys(src); } catch (e) { keysNote = ` Keys not merged: ${e?.message ?? e}.`; }
   const r = await exec("sh", ["-c", INSTALL_SH, "sh", appHome(), tmp, src], { timeout: 240000 });
   if (r.code !== 0) throw new Error(`${(r.stderr || r.stdout).trim()} (previous files are in ~/.config/herdr-app/.niu-ma-backup)`);
+  try { await keepLayoutFile(oldLayout); } catch (e) { keysNote += ` Layout settings not carried over: ${e?.message ?? e}.`; }
+  setShared("niu-ma.layout-kept", version);
   return { version, added, keysNote };
 }
 
@@ -232,6 +280,7 @@ export default class Bar extends View {
     // down): open `hc machine login <name>` in a tab of its own so only the password or code
     // is left to type. Checked every 30 s while ⚙'s switch (shared "niu-ma.auto-login") is on.
     this.logins = {};
+    this.restoreLayout(cx);
     cx.timer.after(4000, (cx) => this.watchMachines(cx));
     cx.timer.every(30000, (cx) => this.watchMachines(cx));
     // The update check: due every CHECK_HOURS (or when the installed version changed, after
@@ -268,6 +317,32 @@ export default class Bar extends View {
         this.agents = (await knownAgents()).filter((a) => a.installed).slice(0, 3);
       } catch {
         this.agents = [];
+      }
+      cx.notify();
+    });
+  }
+
+  // Once per installed version: an Upgrade from before 1.5.1 replaced niu-ma.json without
+  // keeping your settings. Its backup (.niu-ma-backup) still has them: put them back.
+  restoreLayout(cx) {
+    cx.spawn(async (cx) => {
+      try {
+        const version = await installedVersion();
+        if (!version || shared("niu-ma.layout-kept") === version) return;
+        setShared("niu-ma.layout-kept", version);
+        // Only a backup made by the upgrade that installed this version (written within a
+        // couple of minutes of its VERSION file), never an older one.
+        const mtime = async (f) => Number((await exec("sh", ["-c", 'stat -f %m "$1" 2>/dev/null || stat -c %Y "$1"', "sh", f])
+          .catch(() => ({ stdout: "" }))).stdout.trim()) || 0;
+        const bpath = `${appHome()}/.niu-ma-backup/layouts/niu-ma.json`;
+        const [b, v] = [await mtime(bpath), await mtime(`${appHome()}/mods/niu-ma-bar/VERSION`)];
+        if (!b || !v || Math.abs(b - v) > 180) return;
+        const backup = await readTextFile(bpath).catch(() => null);
+        if (backup && (await keepLayoutFile(JSON.parse(backup)))) {
+          notify({ title: "Layout settings restored", body: "Your sizes, hidden panels and theme from before the upgrade are back.", level: "success", timeout: 5000 });
+        }
+      } catch (e) {
+        console.log(`niu-ma-bar: restore layout: ${e}`);
       }
       cx.notify();
     });
