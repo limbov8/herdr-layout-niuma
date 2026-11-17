@@ -566,8 +566,8 @@ export default class Bar extends View {
           "Off hides the bottom shell and its bar; the shell keeps running and comes back when you turn this on."))
         .child(this.toggle(t, "show-usage", "Show tokens and cost", this.showUsage, (v) => { this.showUsage = v; },
           "Adds a line to each Claude Code and Codex agent's name tag: tokens this session (not counting cache reads), then the estimated API cost today / for the whole session, e.g. 1.2M tok · $3.4 / $8.0. Cost is at API list prices, so on a subscription it's what it would have cost; Codex shows tokens only."))
-        .child(this.toggle(t, "auto-login", "Reconnect machines that need a login", this.autoLogin, (v) => { this.autoLogin = v; },
-          "When a machine says it needs a login (after it was down or restarted), NiuMa opens hc machine login <name> in a small terminal so you only type the password or code. It closes when you're in."))
+        .child(this.toggle(t, "auto-login", "Reconnect machines automatically", this.autoLogin, (v) => { this.autoLogin = v; },
+          "When a machine needs a login or can't be reached (after it was down), NiuMa runs hc machine login <name> quietly. Already authorized, it just reconnects; if it asks for a password or code, it opens a Log in tab for you to type it, which closes when you're in."))
         .child(this.renderShortcuts(t))
         .child(this.renderVersion(t, cx, { sponsor: true })))
       .child(div().flex().flex_row().items_center().gap(8)
