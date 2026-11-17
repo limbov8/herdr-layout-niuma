@@ -283,27 +283,16 @@ export default class Bar extends View {
         const live = new Set(terminals().filter((t) => t.state === "live").map((t) => t.address));
         for (const m of list) {
           const login = this.logins[m.name];
-          const open = login && live.has(login.addr);
-          // Done (or closed): go back to where you were.
-          if (login && !open && login.back) { run("tab.select", { id: login.back }); login.back = null; }
-          if (m.state !== "needs_login") { if (!open) delete this.logins[m.name]; continue; }
-          if (open || (login && Date.now() < login.next)) continue;
-          // A tab in a space on this computer (labels make Herdr show it); a login runs here.
-          const space = spaces().find((sp) => !sp.machine && sp.active) ?? spaces().find((sp) => !sp.machine);
-          const tab = `niu-ma-login-${m.name}-${Date.now()}`;
-          const out = await hc(["run", "--json", "--bg", "--keep", "--name", `niu-ma-login-${m.name}`,
-            "--label", `herdr.space=${space?.id?.split("/").pop() ?? "niu-ma-login"}`, "--label", `herdr.tab=${tab}`,
-            "--", "hc", "machine", "login", m.name]).catch(() => null);
-          let addr = null;
-          try { addr = JSON.parse(out?.stdout || "{}").address ?? null; } catch {}
-          if (!addr) continue;
-          const tries = (login?.tries ?? 0) + 1;
-          const back = focused()?.tab ?? null;
-          // Closed without logging in: ask again after 2, 4, 8, 16, then every 30 minutes.
-          this.logins[m.name] = { addr, tries, back, next: Date.now() + Math.min(30, 2 ** tries) * 60e3 };
-          cx.timer.after(700, () => { run("tab.rename", { id: tab, name: `Log in to ${m.name}` }); run("tab.select", { id: tab }); });
-          notify({ title: `${m.name} needs a login`, body: "Type its password or code in the Log in tab; it closes when you're in.",
-            level: "warning", timeout: 8000, action: { name: "tab.select", args: { id: tab } } });
+          const running = login && live.has(login.addr);
+          // A shown login that finished (or was closed): go back to where you were.
+          if (login?.back && !running) { run("tab.select", { id: login.back }); login.back = null; }
+          // Reconnect when it needs a login, or can't be reached (the host was down) unless
+          // a different core answers there now: that one wants Herdr's own Connect.
+          const rebuilt = /^a different core answers there/.test(m.why ?? "");
+          const wants = m.state === "needs_login" || (m.state === "unreachable" && !rebuilt);
+          if (!wants) { if (!running) delete this.logins[m.name]; continue; }
+          if (running || (login && Date.now() < login.next)) continue;
+          this.tryLogin(m.name, login?.tries ?? 0, cx);
         }
       } catch (e) {
         console.log(`niu-ma-bar: machine check: ${e}`);
@@ -311,6 +300,57 @@ export default class Bar extends View {
       this.machineBusy = false;
       cx.notify();
     });
+  }
+
+  // Runs `hc machine login <name>` in a hidden terminal on this computer. Already
+  // authorized (keys, an agent): it finishes on its own and you never see it. Asking for
+  // a password, a code or a host key: the terminal becomes a "Log in to <name>" tab and
+  // NiuMa switches to it. Failing (the host still down): it's tried again later, 1, 2, 4,
+  // 8, 16, then every 30 minutes; a login you close without finishing waits the same way.
+  tryLogin(name, tries, cx) {
+    const next = Date.now() + Math.min(30, 2 ** tries) * 60e3;
+    this.logins[name] = { addr: null, tries: tries + 1, next, back: null };
+    cx.spawn(async (cx) => {
+      const out = await hc(["run", "--json", "--bg", "--keep",
+        "--", "hc", "machine", "login", name]).catch(() => null);
+      let addr = null;
+      try { addr = JSON.parse(out?.stdout || "{}").address ?? null; } catch {}
+      if (!addr) return;
+      this.logins[name].addr = addr;
+      const asks = /(password|passphrase|verification|one-time|otp|\bcode\b|\bpin\b|token|yes\/no|fingerprint|continue connecting)|[:?]\s*$/i;
+      for (let waited = 0; waited < 90; waited++) {
+        await cx.sleep(1000);
+        const g = await hc(["get", addr, "--json"]).catch(() => null);
+        let info = null;
+        try { info = JSON.parse(g?.stdout || "{}"); } catch {}
+        if (!info || info.state !== "live") {
+          if (info?.exit_code === 0) {
+            this.logins[name].tries = 0;
+            notify({ title: `Reconnected to ${name}`, body: "Its spaces are back.", level: "success", timeout: 4000 });
+          }
+          return; // failed: the next check tries again when it's due
+        }
+        const screen = (await hc(["read", addr]).catch(() => null))?.stdout ?? "";
+        const last = screen.split("\n").map((l) => l.trimEnd()).filter(Boolean).pop() ?? "";
+        if (asks.test(last) || waited >= 15) {
+          await this.showLogin(name, addr, cx);
+          return;
+        }
+      }
+    });
+  }
+
+  // Gives the hidden login a tab in a space on this computer and switches to it.
+  async showLogin(name, addr, cx) {
+    const space = spaces().find((sp) => !sp.machine && sp.active) ?? spaces().find((sp) => !sp.machine);
+    const tab = `niu-ma-login-${name}-${Date.now()}`;
+    this.logins[name].back = focused()?.tab ?? null;
+    await hc(["label", addr, `herdr.space=${space?.id?.split("/").pop() ?? "niu-ma-login"}`, `herdr.tab=${tab}`]).catch(() => null);
+    await cx.sleep(700); // Herdr picks the labelled terminal up as a new tab
+    run("tab.rename", { id: tab, name: `Log in to ${name}` });
+    run("tab.select", { id: tab });
+    notify({ title: `${name} needs a login`, body: "Type its password or code in the Log in tab; it closes when you're in.",
+      level: "warning", timeout: 8000, action: { name: "tab.select", args: { id: tab } } });
   }
 
   // A new panel in the shown tab, always side by side: it splits the widest panel (by its

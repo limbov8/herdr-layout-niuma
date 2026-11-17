@@ -90,8 +90,10 @@ know), and it may ask before adding the optional zsh hook.
   reads `~/.claude/sessions`, `~/.claude/projects` and `~/.codex/sessions` locally with
   `python3` (`mods/niu-ma-pasture/tools/usage.py`), once a minute; nothing leaves the
   machine. Turn it off with **Show tokens and cost** in ⚙.
-- **Machines that need a login** (after the host was down) get `hc machine login <name>`
-  opened for you in a Log in tab, so you only type the password or code. Switch: ⚙.
+- **Machines that need a login** or can't be reached (after the host was down): NiuMa runs
+  `hc machine login <name>` in a hidden local terminal. Already authorized, it just
+  reconnects; if it asks for a password or code, it opens as a Log in tab for you to type it.
+  Switch: ⚙.
 - **Feedback.** ⚙'s Feedback button opens a [new issue](https://github.com/limbov8/herdr-layout-niuma/issues/new).
 - Click the sun (or moon) to change the pasture's sky: auto (follows the clock), day,
   evening, night. It's separate from the app's theme, so a dark theme can keep the sun.

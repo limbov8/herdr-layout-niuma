@@ -4,6 +4,15 @@ Newest first. Each release is a `## <version> — <date>` heading; the ⚙ dialo
 update window show the sections newer than the installed version. When releasing, bump
 both `VERSION` and `mods/niu-ma-bar/VERSION` (the installed copy reads the latter).
 
+## 1.5.1 — 2026-11-17
+
+- **Quieter reconnects.** NiuMa now runs `hc machine login <name>` in a hidden terminal on
+  this computer when a machine needs a login or can't be reached. If it's already
+  authorized (SSH keys, an agent), it finishes on its own with a "Reconnected" toast and you
+  see nothing else. Only when it asks for a password, a code or a host key does it become a
+  "Log in to <name>" tab. If it fails (the host is still down), it tries again after 1, 2,
+  4, 8, 16, then every 30 minutes.
+
 ## 1.5.0 — 2026-11-17
 
 - **Space shortcuts.** ⌘1–⌘9 switch to space 1–9 and ⇧⌘[ / ⇧⌘] go to the previous / next
